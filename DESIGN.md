@@ -1,0 +1,2 @@
+# Dirección de interfaz
+Aplicación operativa. Asunción elegida dentro de la autonomía pedida: claridad de una libreta comercial contemporánea, fondo cálido claro, tinta verde profunda y acento lima moderado. Inter y numerales tabulares. El contenido manda: agenda de cobros, listas de clientes y detalle de compra. Barra lateral en escritorio y navegación inferior en celular. Formularios en paneles con confirmación explícita de las operaciones sensibles. Sin fotos decorativas ni métricas ficticias. Paletas alternativas contrastadas por usuario.
