@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   Plus,
   Users,
-  Package,
   CalendarDays,
   Wallet,
   Building2,
@@ -45,7 +44,7 @@ export function Dashboard() {
     <>
       <Heading
         title={`Hola ${a.user.name.split(" ")[0]}`}
-        description={day(a.session.today) + " · Tu trabajo empieza aquí"}
+        description={day(a.session.today)}
       >
         <Button
           icon={a.admin ? Building2 : Plus}
@@ -66,7 +65,6 @@ export function Dashboard() {
               <div>
                 <span>Cobrado</span>
                 <strong>{money(r.collected)}</strong>
-                <small>Pagos registrados</small>
               </div>
               <div>
                 <span>Por cobrar</span>
@@ -139,7 +137,7 @@ export function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <Empty icon={CalendarDays} title="Tu agenda está despejada">
+                  <Empty icon={CalendarDays} title="Sin cobros pendientes">
                     Los próximos vencimientos aparecerán cuando confirmes una
                     compra
                   </Empty>
@@ -147,9 +145,7 @@ export function Dashboard() {
               </section>
               <aside className="dashboard-aside">
                 <section className="stock-summary">
-                  <Package size={27} />
-                  <h2>Todo bajo control</h2>
-                  <p>Existencias del catálogo</p>
+                  <h2>Inventario</h2>
                   <dl>
                     <div>
                       <dt>Disponibles</dt>
@@ -269,7 +265,7 @@ export function Calendar() {
     <>
       <Heading
         title="Cobros"
-        description="Lo que toca hoy y lo que sigue después"
+        description="Cuotas pendientes por fecha de vencimiento"
       />
       <div className="toolbar wrap">
         <SearchBox
@@ -1029,10 +1025,7 @@ export function SettingsPage() {
     [savingTheme, setSavingTheme] = useState(false);
   return (
     <>
-      <Heading
-        title="Configuración"
-        description="Tu cuenta y tu forma de trabajar"
-      />
+      <Heading title="Configuración" />
       <div className="settings-grid">
         <section>
           <h2>Colores de tu cuenta</h2>
@@ -1234,7 +1227,7 @@ export function Notifications() {
             ))}
           </div>
         ) : (
-          <Empty icon={Bell} title="Todo al día">
+          <Empty icon={Bell} title="Sin notificaciones">
             Tus avisos aparecerán aquí
           </Empty>
         )}

@@ -298,9 +298,6 @@ function App() {
               </a>
             ))}
           </nav>
-          <div className="sidebar-foot">
-            <span className="status-dot" /> Datos guardados en servidor
-          </div>
         </aside>
         {menu && (
           <button
@@ -362,15 +359,6 @@ function App() {
             )}
             {content}
           </main>
-          <footer className="page-footer">
-            <span>
-              Polacos ·{" "}
-              {admin
-                ? "Administración de la plataforma"
-                : "Tu trabajo en orden"}
-            </span>
-            <span>Costa Rica · CRC</span>
-          </footer>
         </div>
         <nav className="bottom-nav" aria-label="Navegación móvil">
           {nav
@@ -402,7 +390,10 @@ function App() {
           </div>
         )}
         {onboarding && (
-          <Modal title="Hazlo tuyo" onClose={() => setOnboarding(false)}>
+          <Modal
+            title="Colores de tu cuenta"
+            onClose={() => setOnboarding(false)}
+          >
             <p>
               Elige los colores con los que vas a trabajar. Solo cambian en tu
               cuenta
@@ -467,28 +458,14 @@ function Login({ onLogin }) {
         <a className="brand">
           <span className="brand-mark">p</span>polacos.
         </a>
-        <div>
-          <h1>
-            Tu trabajo
-            <br />
-            en orden
-          </h1>
-          <p>
-            Los clientes de hoy.
-            <br />
-            Las cuentas claras.
-            <br />
-            Todo tu equipo conectado.
-          </p>
-          <div className="login-rule" />
-          <span>Hecho para vender y cobrar en Costa Rica</span>
-        </div>
-        <small>Inventario · Clientes · Cobros</small>
+        <h1>
+          Clientes
+          <br />y cobros
+        </h1>
       </section>
       <section className="login-form">
         <span className="mobile-brand">polacos.</span>
-        <h2>Qué bueno verte</h2>
-        <p>Inicia sesión para continuar con tu día</p>
+        <h2>Iniciar sesión</h2>
         <Form
           submit="Iniciar sesión"
           onSubmit={async (values) => {

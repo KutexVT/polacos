@@ -194,7 +194,6 @@ export function Form({
         >
           {submit}
         </Button>
-        <small>Se confirma al guardar en el servidor</small>
       </div>
     </form>
   );

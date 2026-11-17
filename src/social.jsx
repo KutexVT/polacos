@@ -530,7 +530,7 @@ export function Chats({ id, supportOnly = false }) {
             ? "Solicitudes de ayuda de dueños y polacos"
             : a.admin
               ? "Consulta el historial del grupo"
-              : "Tu equipo conectado. Soporte cuando lo necesitas"
+              : "Conversaciones con tu equipo y soporte"
         }
       >
         {!a.admin && (
@@ -734,7 +734,10 @@ export function Chats({ id, supportOnly = false }) {
               )}
             </State>
           ) : (
-            <Empty icon={MessagesSquare} title="Todo empieza con un mensaje">
+            <Empty
+              icon={MessagesSquare}
+              title="Ninguna conversación seleccionada"
+            >
               Elige una conversación para ver su historial
             </Empty>
           )}

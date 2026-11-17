@@ -58,7 +58,7 @@ async function signOut() {
   await page
     .getByRole("button", { name: "Cerrar sesión", exact: true })
     .click();
-  await page.getByRole("heading", { name: "Qué bueno verte" }).waitFor();
+  await page.getByRole("heading", { name: "Iniciar sesión" }).waitFor();
 }
 async function api(path, body, method = body ? "POST" : "GET") {
   const r = await context.request.fetch(base + "/api" + path, {

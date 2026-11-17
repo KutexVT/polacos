@@ -70,7 +70,7 @@ export function Clients() {
         description={
           a.admin
             ? "Consulta las fichas y corrige los datos de este grupo"
-            : "Cada persona. Cada compra. Todo al día"
+            : undefined
         }
       >
         {!a.admin && (
@@ -121,7 +121,7 @@ export function Clients() {
             ))}
           </div>
         ) : (
-          <Empty icon={Users} title="Aquí empieza cada venta">
+          <Empty icon={Users} title="Sin clientes">
             Añade tu primer cliente y organiza sus compras y cobros
           </Empty>
         )}
@@ -572,7 +572,7 @@ export function Inventory() {
         description={
           a.admin
             ? "Consulta las existencias y corrige los registros de este grupo"
-            : "El catálogo de productos"
+            : undefined
         }
       >
         {a.manager && !a.admin && (
@@ -594,7 +594,6 @@ export function Inventory() {
           }}
           placeholder="Buscar producto"
         />
-        <span className="muted">Disponibles · Reservadas · Asignadas</span>
       </div>
       <State {...state}>
         {state.data?.items.length ? (
@@ -658,7 +657,7 @@ export function Inventory() {
             ))}
           </div>
         ) : (
-          <Empty icon={Package} title="Tu catálogo empieza aquí">
+          <Empty icon={Package} title="Sin productos">
             {a.manager
               ? "Añade un producto con su precio y existencias"
               : "El responsable añadirá los productos disponibles"}

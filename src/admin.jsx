@@ -62,10 +62,7 @@ export function AdminHome() {
     d = state.data;
   return (
     <>
-      <Heading
-        title="Centro de administración"
-        description="Atiende a las personas y mantén la plataforma en orden"
-      >
+      <Heading title="Centro de administración">
         <Button icon={LifeBuoy} onClick={() => a.navigate("/support")}>
           Abrir soporte
         </Button>
