@@ -528,10 +528,8 @@ try {
   assert.equal(
     await page
       .locator(".sidebar nav")
-      .evaluate(
-        (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
-      ),
-    2,
+      .evaluate((el) => getComputedStyle(el).flexDirection),
+    "column",
   );
   await page.screenshot({
     path: ".local/screenshots/grid-menu-mobile.png",
