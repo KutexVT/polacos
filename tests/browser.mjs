@@ -674,7 +674,7 @@ try {
       {
         ok: true,
         base,
-        viewports: [1440, 820, 390],
+        viewports: [320, 390, 600, 820, 1440],
         screenshots: ".local/screenshots",
         errors,
         redeploy,
