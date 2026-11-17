@@ -16,6 +16,8 @@ Código: `/home/kutex/project/polacos`. Las credenciales iniciales de esta insta
 
 El dueño opera sobre sus clientes y los de su equipo sin suplantar usuarios. El administrador selecciona grupo o consulta toda la plataforma. Los clientes comerciales no tienen cuenta.
 
+En **Configuración → Colores de tu cuenta** se elige modo Claro u Oscuro y una de las cuatro paletas. Ambas preferencias se guardan por usuario y se recuperan en otros dispositivos; las cuentas sin una selección previa conservan el modo claro.
+
 ## Ejecutar localmente
 
 Requisitos: Node.js 24, npm, PostgreSQL 16 o superior. El despliegue usa Node 24 y PostgreSQL 18. La base local de esta entrega está en el contenedor `polacos-db` y puerto `127.0.0.1:55439`.

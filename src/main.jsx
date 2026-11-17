@@ -199,7 +199,14 @@ function App() {
   else content = <Dashboard />;
   return (
     <Context.Provider value={ctx}>
-      <div className={"app palette-" + (user.preferences.palette || "forest")}>
+      <div
+        className={
+          "app palette-" +
+          (user.preferences.palette || "forest") +
+          " theme-" +
+          (user.preferences.theme || "light")
+        }
+      >
         <aside className={"sidebar " + (menu ? "open" : "")}>
           <a
             href="/"

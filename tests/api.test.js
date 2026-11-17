@@ -569,6 +569,22 @@ test("08 · Chat privado, adjuntos autorizados, soporte iniciado por trabajador 
 });
 test("09 · Personalización independiente y archivos de logo autorizados por grupo", async () => {
   await ok(w1.cookie, "/me", { palette: "ocean", onboarded: true }, "PATCH");
+  await ok(w1.cookie, "/me", { theme: "dark" }, "PATCH");
+  const secondSession = await login(w1.username);
+  assert.equal((await ok(secondSession, "/me")).user.preferences.theme, "dark");
+  assert.equal(
+    (await ok(w2.cookie, "/me")).user.preferences.theme || "light",
+    "light",
+  );
+  assert.equal(
+    (await request(w1.cookie, "/me", { theme: "invalid" }, "PATCH")).status,
+    400,
+  );
+  await ok(w1.cookie, "/me", { theme: "light" }, "PATCH");
+  assert.equal(
+    (await ok(secondSession, "/me")).user.preferences.theme,
+    "light",
+  );
   assert.equal((await ok(w1.cookie, "/me")).user.preferences.palette, "ocean");
   assert.notEqual(
     (await ok(w2.cookie, "/me")).user.preferences.palette,

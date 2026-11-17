@@ -158,6 +158,7 @@ export function routes(app) {
     z.object({
       name: name.optional(),
       palette: z.enum(["forest", "ocean", "plum", "earth"]).optional(),
+      theme: z.enum(["light", "dark"]).optional(),
       onboarded: z.boolean().optional(),
       password: z.string().optional(),
     }),
@@ -165,6 +166,7 @@ export function routes(app) {
       const prefs = {
         ...u.preferences,
         ...(b.palette ? { palette: b.palette } : {}),
+        ...(b.theme ? { theme: b.theme } : {}),
         ...(b.onboarded !== undefined ? { onboarded: b.onboarded } : {}),
       };
       await db.query(

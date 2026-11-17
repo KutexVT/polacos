@@ -17,6 +17,8 @@ import {
   LogOut,
   Download,
   Check,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useApp, Palette } from "./main";
 import { Heading } from "./commerce";
@@ -947,7 +949,8 @@ export function Trash() {
 }
 export function SettingsPage() {
   const a = useApp(),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [savingTheme, setSavingTheme] = useState(false);
   return (
     <>
       <Heading
@@ -961,6 +964,39 @@ export function SettingsPage() {
             Tu elección se recupera en otros dispositivos y no cambia la de tus
             compañeros
           </p>
+          <div
+            className="theme-options"
+            role="group"
+            aria-label="Modo de apariencia"
+          >
+            {[
+              ["light", "Claro", Sun],
+              ["dark", "Oscuro", Moon],
+            ].map(([theme, label, Icon]) => (
+              <button
+                type="button"
+                key={theme}
+                disabled={savingTheme}
+                aria-pressed={(a.user.preferences.theme || "light") === theme}
+                onClick={async () => {
+                  setSavingTheme(true);
+                  setError("");
+                  try {
+                    await api("/me", { method: "PATCH", body: { theme } });
+                    await a.reload();
+                    a.refresh("Apariencia guardada");
+                  } catch (e) {
+                    setError(e.message);
+                  } finally {
+                    setSavingTheme(false);
+                  }
+                }}
+              >
+                <Icon size={18} />
+                {label}
+              </button>
+            ))}
+          </div>
           <Palette
             current={a.user.preferences.palette || "forest"}
             onSelect={async (palette) => {

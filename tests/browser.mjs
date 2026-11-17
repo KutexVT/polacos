@@ -295,6 +295,12 @@ try {
     animations: "disabled",
   });
   await page.goto(base + "/settings");
+  await page.getByRole("button", { name: "Oscuro", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector(".theme-dark"));
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector(".theme-dark"));
+  await page.getByRole("button", { name: "Claro", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector(".theme-light"));
   await page.getByRole("button", { name: "Océano", exact: true }).click();
   await page.waitForFunction(() => document.querySelector(".palette-ocean"));
   await page.reload();
