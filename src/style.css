@@ -3306,6 +3306,7 @@ dialog::backdrop {
 @media (max-width: 600px) {
   .platform-stats > .toolbar select {
     width: 100%;
+    grid-column: 1 / -1;
   }
 }
 @media (max-width: 400px) {
@@ -3317,10 +3318,5 @@ dialog::backdrop {
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
-  }
-}
-@media (max-width: 600px) {
-  .platform-stats > .toolbar select {
-    flex: 0 0 100%;
   }
 }
