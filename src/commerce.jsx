@@ -16,6 +16,7 @@ import {
   X,
   History,
 } from "lucide-react";
+import { ReviewRecord } from "./admin";
 import { useApp } from "./main";
 import { api, money, day, time, labels, id as newId } from "./api";
 import {
@@ -64,16 +65,22 @@ export function Clients() {
   return (
     <>
       <Heading
-        title="Tus clientes"
-        description="Cada persona. Cada compra. Todo al día"
+        title={a.admin ? "Revisar clientes" : "Tus clientes"}
+        description={
+          a.admin
+            ? "Consulta las fichas y corrige los datos de este grupo"
+            : "Cada persona. Cada compra. Todo al día"
+        }
       >
-        <Button
-          icon={Plus}
-          disabled={a.admin && !a.group}
-          onClick={() => setModal(true)}
-        >
-          Nuevo cliente
-        </Button>
+        {!a.admin && (
+          <Button
+            icon={Plus}
+            disabled={a.admin && !a.group}
+            onClick={() => setModal(true)}
+          >
+            Nuevo cliente
+          </Button>
+        )}
       </Heading>
       {a.admin && !a.group && (
         <p className="notice">Selecciona un grupo para añadir clientes</p>
@@ -210,29 +217,38 @@ export function ClientDetail({ id }) {
   const a = useApp(),
     state = useData("/clients/" + id, a.revision),
     [modal, setModal] = useState("");
-  const directory = useData(a.scope("/directory"));
   const c = state.data;
+  const directory = useData(
+    a.admin && c ? "/directory?group_id=" + c.group_id : a.scope("/directory"),
+  );
   return (
     <>
       <Button
         variant="quiet back"
         icon={ArrowLeft}
-        onClick={() => a.navigate("/clients")}
+        onClick={() =>
+          a.navigate(
+            a.admin && c ? "/groups/" + c.group_id + "/clients" : "/clients",
+          )
+        }
       >
         Clientes
       </Button>
       <State {...state}>
         {c && (
           <>
+            <ReviewRecord groupId={c.group_id} />
             <Heading
               title={c.name}
               description={c.phone || "Ficha del cliente"}
             >
               {c.can_edit && (
                 <>
-                  <Button icon={Plus} onClick={() => setModal("purchase")}>
-                    Nueva compra
-                  </Button>
+                  {!a.admin && (
+                    <Button icon={Plus} onClick={() => setModal("purchase")}>
+                      Nueva compra
+                    </Button>
+                  )}
                   <Button
                     variant="secondary"
                     icon={Pencil}
@@ -546,9 +562,13 @@ export function Inventory() {
     <>
       <Heading
         title="Inventario"
-        description="El catálogo que comparte tu grupo"
+        description={
+          a.admin
+            ? "Consulta las existencias y corrige los registros de este grupo"
+            : "El catálogo que comparte tu grupo"
+        }
       >
-        {a.manager && (
+        {a.manager && !a.admin && (
           <Button
             icon={Plus}
             disabled={a.admin && !a.group}
@@ -710,6 +730,7 @@ function ProductForm({ product: p, onClose }) {
         </div>
         {p && (
           <>
+            <ReviewRecord groupId={p.group_id} />
             <p className="notice">
               Cambiar el catálogo conserva los precios de las compras
               anteriores. Las reservas y asignaciones se administran desde las
@@ -776,7 +797,7 @@ export function PurchaseDetail({ id }) {
               description={`${p.client_name} · ${p.quantity} unidades de ${money(p.unit_price)}`}
             >
               <Badge status={p.status} />
-              {p.status === "active" && p.can_edit && (
+              {!a.admin && p.status === "active" && p.can_edit && (
                 <Button
                   icon={Wallet}
                   onClick={() => setModal({ type: "payment" })}

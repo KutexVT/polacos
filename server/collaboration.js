@@ -198,7 +198,15 @@ export function collaborationRoutes(app) {
     ).rows;
     res.json(
       list(
-        req.query.kind ? rows.filter((c) => c.kind === req.query.kind) : rows,
+        rows.filter(
+          (c) =>
+            (!req.query.kind || c.kind === req.query.kind) &&
+            (!req.query.status ||
+              req.query.status === "all" ||
+              (req.query.status === "unresolved"
+                ? c.support_status !== "resolved"
+                : c.support_status === req.query.status)),
+        ),
         req,
       ),
     );
@@ -314,7 +322,9 @@ export function collaborationRoutes(app) {
       ...c,
       messages: list(rows, req),
       members,
-      can_send: members.some((m) => m.id === req.user.id && !m.deleted_at),
+      can_send:
+        (req.user.role === "admin" && c.kind === "support") ||
+        members.some((m) => m.id === req.user.id && !m.deleted_at),
     });
   });
   write(
@@ -323,7 +333,12 @@ export function collaborationRoutes(app) {
     "/api/conversations/:id/messages",
     z.object({ body: text, file_id: uuid.optional(), idempotency_key: key }),
     async (db, u, b, req) => {
-      await conversationAccess(db, u, req.params.id);
+      const conversation = await conversationAccess(db, u, req.params.id);
+      if (u.role === "admin" && conversation.kind === "support")
+        await db.query(
+          "INSERT INTO conversation_members(conversation_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
+          [req.params.id, u.id],
+        );
       check(
         await one(
           db,
@@ -500,6 +515,23 @@ async function sendMessage(db, u, id, b) {
     "INSERT INTO messages(conversation_id,sender_id,body,file_id,idempotency_key) VALUES($1,$2,$3,$4,$5) RETURNING *",
     [id, u.id, b.body || "", b.file_id || null, b.idempotency_key],
   );
+  if (u.role !== "admin") {
+    const reopened = await one(
+      db,
+      "UPDATE conversations SET support_status='open' WHERE id=$1 AND kind='support' AND support_status='resolved' RETURNING group_id",
+      [id],
+    );
+    if (reopened)
+      await audit(
+        db,
+        { ...u, group_id: reopened.group_id },
+        "conversation",
+        id,
+        "Reabrir soporte por nuevo mensaje",
+        { support_status: "resolved" },
+        { support_status: "open" },
+      );
+  }
   const members = (
     await db.query(
       "SELECT cm.user_id FROM conversation_members cm JOIN users u ON u.id=cm.user_id WHERE cm.conversation_id=$1 AND cm.user_id<>$2 AND u.deleted_at IS NULL",

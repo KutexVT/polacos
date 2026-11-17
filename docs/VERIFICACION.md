@@ -72,3 +72,9 @@ Las pruebas dejan sus capturas y logs locales en `.local/`, fuera de Git y del d
 No se hizo una prueba de carga masiva ni una restauración destructiva del volumen. Las pruebas de concurrencia cubren carreras reales de stock, cupos, mensajes y cobros. Las tareas se probaron con reloj controlado sobre grupos aislados; no se esperaron 30 días naturales.
 
 **Copias de seguridad:** Railway rechazó activar el calendario diario porque esta función exige Pro. La lista de programaciones sigue vacía. No se modificó el plan ni se afirma disponer de una copia de recuperación. Retención y procedimiento condicional documentados en `OPERACION.md`.
+
+## Rediseño de administración
+
+Suite local ampliada a 20 pruebas. El escenario API 09b verifica autorización exclusiva de administrador, notas privadas entre dos administradores, vinculación y rechazo de grupos incompatibles, edición/completado/borrado de notas, estados de soporte, reapertura por nuevo mensaje y respuesta desde otro administrador. También verifica revisión de grupo, auditoría del administrador asociada al grupo correcto y rechazo de compras/cobros nuevos con ese rol.
+
+El recorrido de navegador incorpora actualización de estado, notas vinculadas persistentes al recargar, búsqueda global de usuarios, revisión de clientes sin botón de alta y ausencia de Cobros en el menú administrativo. Guarda capturas de la nueva portada a 1440, 820 y 390 píxeles y comprueba desbordes. Conserva el recorrido comercial de dueño y trabajador.

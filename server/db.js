@@ -43,9 +43,25 @@ export async function audit(
   before = null,
   after = null,
 ) {
+  let groupId = user.group_id || before?.group_id || after?.group_id;
+  if (!groupId) {
+    const table = {
+      client: "clients",
+      purchase: "purchases",
+      product: "products",
+      user: "users",
+      access: "access_grants",
+      conversation: "conversations",
+    }[type];
+    if (type === "group") groupId = id;
+    else if (table)
+      groupId = (
+        await one(db, `SELECT group_id FROM ${table} WHERE id=$1`, [id])
+      )?.group_id;
+  }
   await db.query(
     "INSERT INTO audit(group_id,actor_id,entity_type,entity_id,action,before_data,after_data) VALUES($1,$2,$3,$4,$5,$6,$7)",
-    [user.group_id, user.id, type, id, action, before, after],
+    [groupId || null, user.id, type, id, action, before, after],
   );
 }
 export async function notify(db, userId, title, body, path, subject, dedupe) {

@@ -611,6 +611,221 @@ test("09 · Personalización independiente y archivos de logo autorizados por gr
     403,
   );
 });
+test("09b · Administración: soporte, notas privadas, contexto y correcciones con identidad real", async () => {
+  for (const cookie of [owner, w1.cookie, other]) {
+    for (const path of [
+      "/admin/overview",
+      "/admin/activity",
+      "/admin/notes",
+      "/admin/groups/" + group.id,
+    ])
+      assert.equal((await request(cookie, path)).status, 403);
+    assert.equal(
+      (await request(cookie, "/admin/notes", { title: "Privada" })).status,
+      403,
+    );
+  }
+  const support = await ok(w1.cookie, "/conversations", {
+    kind: "support",
+    body: "Necesito corregir mi perfil",
+    idempotency_key: randomUUID(),
+  });
+  assert.equal(
+    (
+      await request(
+        owner,
+        "/admin/support/" + support.id,
+        { status: "resolved" },
+        "PATCH",
+      )
+    ).status,
+    403,
+  );
+  await ok(
+    admin,
+    "/admin/support/" + support.id,
+    { status: "in_progress" },
+    "PATCH",
+  );
+  assert.equal(
+    (await ok(admin, "/conversations/" + support.id)).support_status,
+    "in_progress",
+  );
+  const note = await ok(admin, "/admin/notes", {
+    title: "Revisar perfil",
+    body: "Solo administración",
+    group_id: group.id,
+    conversation_id: support.id,
+    pinned: true,
+  });
+  assert.equal(
+    (await ok(admin, "/admin/notes?group_id=" + group.id + "&q=Revisar"))
+      .items[0].id,
+    note.id,
+  );
+  assert.equal(
+    (
+      await request(
+        admin,
+        "/admin/notes/" + note.id,
+        { ...note, group_id: g2.id },
+        "PATCH",
+      )
+    ).status,
+    400,
+  );
+  const second = await one(
+    pool,
+    "INSERT INTO users(role,name,username,password_hash) SELECT 'admin','Administrador QA',$1,password_hash FROM users WHERE username=$2 RETURNING id",
+    ["admin_" + suffix, process.env.ADMIN_USERNAME],
+  );
+  try {
+    const secondCookie = await login(
+      "admin_" + suffix,
+      process.env.ADMIN_PASSWORD,
+    );
+    assert.equal(
+      (await ok(secondCookie, "/admin/notes?group_id=" + group.id)).total,
+      0,
+    );
+    assert.equal(
+      (
+        await request(
+          secondCookie,
+          "/admin/notes/" + note.id,
+          { ...note, title: "No puede" },
+          "PATCH",
+        )
+      ).status,
+      404,
+    );
+    assert.equal(
+      (await request(secondCookie, "/admin/notes/" + note.id, {}, "DELETE"))
+        .status,
+      404,
+    );
+    await ok(secondCookie, "/conversations/" + support.id + "/messages", {
+      body: "Te ayudo desde administración",
+      idempotency_key: randomUUID(),
+    });
+  } finally {
+    await pool.query("DELETE FROM users WHERE id=$1", [second.id]);
+  }
+  await ok(
+    admin,
+    "/admin/notes/" + note.id,
+    { ...note, title: "Perfil revisado", done: true },
+    "PATCH",
+  );
+  assert.equal(
+    (await ok(admin, "/admin/notes?group_id=" + group.id + "&status=done"))
+      .items[0].title,
+    "Perfil revisado",
+  );
+  await ok(
+    admin,
+    "/admin/support/" + support.id,
+    { status: "resolved" },
+    "PATCH",
+  );
+  assert(
+    !(
+      await ok(
+        admin,
+        "/conversations?kind=support&status=unresolved&group_id=" + group.id,
+      )
+    ).items.some((c) => c.id === support.id),
+  );
+  await ok(w1.cookie, "/conversations/" + support.id + "/messages", {
+    body: "Necesito algo más",
+    idempotency_key: randomUUID(),
+  });
+  assert.equal(
+    (await ok(admin, "/conversations/" + support.id)).support_status,
+    "open",
+  );
+  const overview = await ok(admin, "/admin/overview?group_id=" + group.id);
+  assert(overview.waiting_reply > 0);
+  assert(overview.queue.some((c) => c.id === support.id));
+  assert.equal(overview.balance, undefined);
+  const review = await ok(admin, "/admin/groups/" + group.id);
+  assert.equal(review.id, group.id);
+  assert(review.users > 0);
+  await ok(admin, "/users/" + w1.id, { name: "Polaco revisado" }, "PATCH");
+  await ok(
+    admin,
+    "/clients/" + c1.id,
+    { address: "Dirección corregida por soporte" },
+    "PATCH",
+  );
+  assert.equal(
+    (await ok(admin, "/clients/" + c1.id)).address,
+    "Dirección corregida por soporte",
+  );
+  const recorded = (await ok(admin, "/purchases/" + p1.id)).payments.find(
+    (p) => !p.voided,
+  );
+  assert(recorded);
+  await ok(
+    admin,
+    "/payments/" + recorded.id,
+    { paid_on: recorded.paid_on, reason: "Revisión de soporte" },
+    "PATCH",
+  );
+  assert(
+    (
+      await ok(
+        admin,
+        "/admin/activity?group_id=" + group.id + "&q=Corregir pago",
+      )
+    ).items.some((r) => r.actor_role === "admin" && r.entity_id === p1.id),
+  );
+  assert.equal(
+    (await request(admin, "/admin/activity?from=2026-11-18&to=2026-11-01"))
+      .status,
+    400,
+  );
+
+  const history = (
+    await ok(
+      admin,
+      "/admin/activity?group_id=" + group.id + "&q=Editar usuario",
+    )
+  ).items;
+  assert(
+    history.some((r) => r.actor_role === "admin" && r.entity_id === w1.id),
+  );
+  assert(!("before_data" in history[0]));
+  assert.equal(
+    (
+      await request(admin, "/purchases", {
+        client_id: c1.id,
+        product_id: product.id,
+        quantity: 1,
+        plan,
+        idempotency_key: randomUUID(),
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(admin, "/purchases/" + p1.id + "/payments", {
+        amount: 1,
+        kind: "capital",
+        paid_on: "2026-01-31",
+        idempotency_key: randomUUID(),
+      })
+    ).status,
+    403,
+  );
+  await ok(admin, "/admin/notes/" + note.id, {}, "DELETE");
+  assert(
+    !(
+      await ok(admin, "/admin/notes?group_id=" + group.id + "&status=all")
+    ).items.some((n) => n.id === note.id),
+  );
+});
 test("10 · Papelera restaura pagos sin stock duplicado y comprueba disponibilidad", async () => {
   const before = await getProduct();
   const old = await ok(w1.cookie, "/purchases/" + p1.id);

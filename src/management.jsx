@@ -20,6 +20,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import { GroupFilter } from "./admin";
 import { useApp, Palette } from "./main";
 import { Heading } from "./commerce";
 import { api, money, day, time, labels } from "./api";
@@ -528,8 +529,12 @@ function Comparison({ rows }) {
 export function Groups() {
   const a = useApp(),
     [page, setPage] = useState(1),
+    [q, setQ] = useState(""),
     [modal, setModal] = useState(null);
-  const state = useData("/groups?page=" + page, a.revision);
+  const state = useData(
+    "/groups?page=" + page + "&q=" + encodeURIComponent(q),
+    a.revision,
+  );
   return (
     <>
       <Heading
@@ -540,6 +545,16 @@ export function Groups() {
           Crear grupo
         </Button>
       </Heading>
+      <div className="toolbar">
+        <SearchBox
+          value={q}
+          onChange={(v) => {
+            setQ(v);
+            setPage(1);
+          }}
+          placeholder="Buscar grupo"
+        />
+      </div>
       <State {...state}>
         {state.data?.items.length ? (
           <div className="table-wrap">
@@ -556,13 +571,24 @@ export function Groups() {
                 {state.data.items.map((g) => (
                   <tr key={g.id}>
                     <td>
-                      <strong>{g.name}</strong>
+                      <button
+                        className="text-link"
+                        onClick={() => a.navigate("/groups/" + g.id)}
+                      >
+                        {g.name}
+                      </button>
                     </td>
                     <td>
                       {g.used_slots} / {g.polaco_limit}
                     </td>
                     <td>{day(g.created_at)}</td>
                     <td>
+                      <Button
+                        variant="secondary"
+                        onClick={() => a.navigate("/groups/" + g.id)}
+                      >
+                        Revisar grupo
+                      </Button>
                       <Button
                         variant="quiet"
                         icon={Pencil}
@@ -646,27 +672,50 @@ export function Groups() {
 export function Team() {
   const a = useApp(),
     [page, setPage] = useState(1),
+    [q, setQ] = useState(""),
     [modal, setModal] = useState(null);
-  const state = useData(a.scope("/users?page=" + page), a.revision),
+  const state = useData(
+      a.scope("/users?page=" + page + "&q=" + encodeURIComponent(q)),
+      a.revision,
+    ),
     directory = useData(a.scope("/directory"), a.revision);
   return (
     <>
       <Heading
-        title="Usuarios del grupo"
+        title={
+          a.admin && !a.group
+            ? "Usuarios de la plataforma"
+            : "Usuarios del grupo"
+        }
         description={
           state.data?.limit !== null && state.data?.limit !== undefined
             ? `${state.data.used} de ${state.data.limit} cupos de polacos utilizados`
-            : "Selecciona un grupo para gestionar sus cupos"
+            : "Busca una persona para revisar su grupo o corregir su acceso"
         }
       >
-        <Button
-          icon={Plus}
-          disabled={a.admin && !a.group}
-          onClick={() => setModal({ type: "edit" })}
-        >
-          Nuevo polaco
-        </Button>
+        {(!a.admin || a.group) && (
+          <Button
+            icon={Plus}
+            disabled={a.admin && !a.group}
+            onClick={() => setModal({ type: "edit" })}
+          >
+            Nuevo polaco
+          </Button>
+        )}
       </Heading>
+      <div className="toolbar wrap">
+        <SearchBox
+          value={q}
+          onChange={(v) => {
+            setQ(v);
+            setPage(1);
+          }}
+          placeholder="Buscar nombre usuario o grupo"
+        />
+        {a.admin && !location.pathname.startsWith("/groups/") && (
+          <GroupFilter onChange={() => setPage(1)} />
+        )}
+      </div>
       <State {...state}>
         <div className="table-wrap">
           <table>
@@ -685,8 +734,25 @@ export function Team() {
                     <strong>{u.name}</strong>
                   </td>
                   <td>{u.username}</td>
-                  <td>{labels[u.role]}</td>
                   <td>
+                    {labels[u.role]}
+                    {a.admin && (
+                      <small className="cell-detail">
+                        {u.group_name || "Plataforma"}
+                      </small>
+                    )}
+                  </td>
+                  <td>
+                    {a.admin && u.group_id && (
+                      <Button
+                        variant="quiet"
+                        onClick={() =>
+                          a.navigate("/groups/" + u.group_id + "/team")
+                        }
+                      >
+                        Revisar grupo
+                      </Button>
+                    )}
                     {(u.role === "polaco" ||
                       (a.admin && u.role !== "admin")) && (
                       <div className="row-actions">

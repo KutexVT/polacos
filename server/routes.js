@@ -36,6 +36,8 @@ export const list = (rows, req) => {
           r.requester_name,
           r.target_name,
           r.scope,
+          r.creator_name,
+          r.group_name,
         ].some((v) => v?.toLocaleLowerCase("es").includes(q)),
       )
     : rows;
@@ -279,7 +281,7 @@ export function routes(app) {
         : req.user.group_id;
     const rows = (
       await pool.query(
-        "SELECT id,name,username,role,group_id,created_at FROM users WHERE deleted_at IS NULL AND ($1::uuid IS NULL OR group_id=$1) ORDER BY created_at",
+        "SELECT u.id,u.name,u.username,u.role,u.group_id,u.created_at,g.name AS group_name FROM users u LEFT JOIN groups g ON g.id=u.group_id WHERE u.deleted_at IS NULL AND ($1::uuid IS NULL OR u.group_id=$1) ORDER BY u.created_at",
         [gid],
       )
     ).rows;
@@ -655,6 +657,11 @@ export function routes(app) {
       idempotency_key: key,
     }),
     async (db, u, b) => {
+      check(
+        u.role !== "admin",
+        "La cuenta de administrador no crea compras",
+        403,
+      );
       const c = await getClient(db, u, b.client_id, true);
       const old = await one(
         db,
@@ -1003,6 +1010,11 @@ export function routes(app) {
       idempotency_key: key,
     }),
     async (db, u, b, req) => {
+      check(
+        u.role !== "admin",
+        "La cuenta de administrador no registra cobros. Puede corregir pagos existentes",
+        403,
+      );
       const p = await getPurchase(db, u, req.params.id, true);
       const duplicate = await one(
         db,

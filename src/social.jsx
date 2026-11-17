@@ -17,6 +17,7 @@ import {
   Download,
   RotateCw,
 } from "lucide-react";
+import { AdminNotes, GroupFilter, supportLabels } from "./admin";
 import { useApp } from "./main";
 import { Heading } from "./commerce";
 import { api, money, day, time, labels, id as newId } from "./api";
@@ -484,16 +485,18 @@ function Grant({ r, onClose }) {
     </Modal>
   );
 }
-export function Chats({ id }) {
+export function Chats({ id, supportOnly = false }) {
   const a = useApp(),
     [page, setPage] = useState(1),
     [messagePage, setMessagePage] = useState(1),
     [q, setQ] = useState(""),
     [kind, setKind] = useState("all"),
+    [status, setStatus] = useState("unresolved"),
+    [showNotes, setShowNotes] = useState(false),
     [modal, setModal] = useState(false);
   const conversations = useData(
       a.scope(
-        `/conversations?page=${page}&q=${encodeURIComponent(q)}${kind === "all" ? "" : "&kind=" + kind}`,
+        `/conversations?page=${page}&q=${encodeURIComponent(q)}${supportOnly ? "&kind=support&status=" + status : kind === "all" ? "" : "&kind=" + kind}`,
       ),
       a.revision,
     ),
@@ -501,7 +504,12 @@ export function Chats({ id }) {
       id ? `/conversations/${id}?page=${messagePage}&limit=40` : null,
       a.revision,
     );
-  const end = useRef();
+  const end = useRef(),
+    notesStart = useRef(),
+    chatStart = useRef();
+  useEffect(() => {
+    if (showNotes) notesStart.current?.scrollIntoView({ block: "start" });
+  }, [showNotes, id]);
   useEffect(() => {
     setMessagePage(1);
   }, [id]);
@@ -516,18 +524,26 @@ export function Chats({ id }) {
   return (
     <>
       <Heading
-        title="Conversaciones"
-        description="Tu grupo conectado. Soporte cuando lo necesitas"
+        title={supportOnly ? "Soporte" : "Conversaciones"}
+        description={
+          supportOnly
+            ? "Solicitudes de ayuda de dueños y polacos"
+            : a.admin
+              ? "Consulta el historial del grupo"
+              : "Tu grupo conectado. Soporte cuando lo necesitas"
+        }
       >
-        <Button icon={Plus} onClick={() => setModal(true)}>
-          Nueva conversación
-        </Button>
+        {!a.admin && (
+          <Button icon={Plus} onClick={() => setModal(true)}>
+            Nueva conversación
+          </Button>
+        )}
       </Heading>
       <p className="chat-disclosure">
         <Shield size={15} /> Las conversaciones pueden ser consultadas por el
         administrador. Sin cifrado de extremo a extremo
       </p>
-      <div className={"chat-layout " + (id ? "has-chat" : "")}>
+      <div ref={chatStart} className={"chat-layout " + (id ? "has-chat" : "")}>
         <aside className="chat-sidebar">
           <SearchBox
             value={q}
@@ -537,7 +553,26 @@ export function Chats({ id }) {
             }}
             placeholder="Buscar conversación"
           />
-          {a.admin && (
+          {supportOnly && (
+            <>
+              <GroupFilter onChange={() => setPage(1)} />
+              <select
+                aria-label="Estado del soporte"
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="unresolved">Casos abiertos</option>
+                <option value="open">Pendientes</option>
+                <option value="in_progress">En revisión</option>
+                <option value="resolved">Resueltos</option>
+                <option value="all">Todos los casos</option>
+              </select>
+            </>
+          )}
+          {a.admin && !supportOnly && (
             <select
               aria-label="Tipo de conversación"
               value={kind}
@@ -555,11 +590,21 @@ export function Chats({ id }) {
                 <button
                   key={c.id}
                   className={"chat-link " + (id === c.id ? "active" : "")}
-                  onClick={() => a.navigate("/chats/" + c.id)}
+                  onClick={() =>
+                    a.navigate(
+                      (supportOnly ? "/support/" : "/chats/") + c.id,
+                      true,
+                    )
+                  }
                 >
                   <Photo name={c.kind === "support" ? "Soporte" : c.name} />
                   <span>
                     <strong>{c.name}</strong>
+                    {a.admin && c.kind === "support" && (
+                      <small className={"support-state " + c.support_status}>
+                        {supportLabels[c.support_status]}
+                      </small>
+                    )}
                     <small>
                       {a.admin
                         ? `${c.group_name || "Plataforma"} · ${labels[c.creator_role] || ""}`
@@ -573,7 +618,9 @@ export function Chats({ id }) {
               ))
             ) : (
               <Empty icon={MessagesSquare} title="Sin conversaciones">
-                Escribe a un compañero o a Soporte
+                {supportOnly
+                  ? "No hay casos con estos filtros"
+                  : "Escribe a un compañero o a Soporte"}
               </Empty>
             )}
             <Pager data={conversations.data} page={page} setPage={setPage} />
@@ -588,7 +635,9 @@ export function Chats({ id }) {
                     <button
                       className="icon-button chat-back"
                       aria-label="Volver a conversaciones"
-                      onClick={() => a.navigate("/chats")}
+                      onClick={() =>
+                        a.navigate(supportOnly ? "/support" : "/chats", true)
+                      }
                     >
                       <ArrowLeft />
                     </button>
@@ -603,6 +652,56 @@ export function Chats({ id }) {
                       </small>
                     </div>
                   </div>
+                  {a.admin && (
+                    <div className="support-tools">
+                      {chat.data.group_id && (
+                        <Button
+                          variant="quiet"
+                          onClick={() =>
+                            a.navigate(
+                              "/groups/" + chat.data.group_id + "/team",
+                            )
+                          }
+                        >
+                          Revisar grupo y usuarios
+                        </Button>
+                      )}
+                      {chat.data.kind === "support" && (
+                        <Form
+                          submit="Actualizar estado"
+                          onSubmit={async (b) => {
+                            await api("/admin/support/" + id, {
+                              method: "PATCH",
+                              body: b,
+                            });
+                            a.refresh("Estado actualizado");
+                          }}
+                        >
+                          <Field label="Estado del caso">
+                            <select
+                              name="status"
+                              key={id + chat.data.support_status}
+                              defaultValue={chat.data.support_status}
+                            >
+                              {Object.entries(supportLabels).map(
+                                ([value, label]) => (
+                                  <option key={value} value={value}>
+                                    {label}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          </Field>
+                        </Form>
+                      )}
+                      <Button
+                        variant="quiet"
+                        onClick={() => setShowNotes(!showNotes)}
+                      >
+                        {showNotes ? "Ocultar notas" : "Notas del caso"}
+                      </Button>
+                    </div>
+                  )}
                   <div className="messages">
                     <Pager
                       data={chat.data.messages}
@@ -641,6 +740,25 @@ export function Chats({ id }) {
           )}
         </section>
       </div>
+      {a.admin && showNotes && chat.data && (
+        <section ref={notesStart} className="case-notes">
+          <Button
+            variant="quiet back"
+            onClick={() => {
+              setShowNotes(false);
+              chatStart.current?.scrollIntoView({ block: "start" });
+            }}
+          >
+            Volver a la conversación
+          </Button>
+          <AdminNotes
+            key={id}
+            compact
+            conversation={id}
+            groupId={chat.data.group_id}
+          />
+        </section>
+      )}
       {modal && <NewConversation onClose={() => setModal(false)} />}
     </>
   );

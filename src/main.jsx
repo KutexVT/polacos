@@ -26,6 +26,9 @@ import {
   ArrowRight,
   Check,
   WifiOff,
+  LifeBuoy,
+  StickyNote,
+  Activity,
 } from "lucide-react";
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-500.css";
@@ -45,6 +48,12 @@ import {
 } from "./management";
 import { Clients, ClientDetail, Inventory, PurchaseDetail } from "./commerce";
 import { Requests, Chats } from "./social";
+import {
+  AdminHome,
+  AdminActivity,
+  AdminNotes,
+  AdminGroupReview,
+} from "./admin";
 import "./style.css";
 export const Context = createContext(null);
 export const useApp = () => useContext(Context);
@@ -59,7 +68,8 @@ function App() {
     [online, setOnline] = useState(navigator.onLine),
     [onboarding, setOnboarding] = useState(false),
     [globalError, setGlobalError] = useState("");
-  const navigate = useCallback((path) => {
+  const navigate = useCallback((path, keepGroup = false) => {
+    if (!keepGroup) setGroup("");
     history.pushState({}, "", path);
     setRoute(path);
     setMenu(false);
@@ -141,26 +151,39 @@ function App() {
   const { user } = session;
   const admin = user.role === "admin",
     manager = admin || user.role === "owner";
-  const groupQuery = admin && group ? `group_id=${group}` : "";
+  const reviewId =
+    admin && route.startsWith("/groups/") ? route.split("/")[2] : "";
+  const activeGroup = reviewId || group;
+  const groupQuery = admin && activeGroup ? `group_id=${activeGroup}` : "";
   const scope = (path) => path + (path.includes("?") ? "&" : "?") + groupQuery;
-  const nav = [
-    ["/", "Inicio", LayoutDashboard],
-    ["/clients", "Clientes", Users],
-    ["/inventory", "Inventario", Package],
-    ["/calendar", "Cobros", CalendarDays],
-    ["/requests", "Solicitudes", GitPullRequest],
-    ["/chats", "Chats", MessagesSquare],
-    ["/notifications", "Notificaciones", Bell],
-    ...(manager
-      ? [
-          ["/reports", "Reportes", ChartNoAxesCombined],
-          ["/team", "Usuarios", UserCog],
-          ["/trash", "Papelera", Archive],
-        ]
-      : []),
-    ...(admin ? [["/groups", "Grupos", Building2]] : []),
-    ["/settings", "Configuración", Settings],
-  ];
+  const nav = admin
+    ? [
+        ["/", "Resumen", LayoutDashboard],
+        ["/support", "Soporte", LifeBuoy],
+        ["/groups", "Grupos", Building2],
+        ["/team", "Usuarios", UserCog],
+        ["/activity", "Actividad", Activity],
+        ["/notes", "Mis notas", StickyNote],
+        ["/notifications", "Notificaciones", Bell],
+        ["/settings", "Configuración", Settings],
+      ]
+    : [
+        ["/", "Inicio", LayoutDashboard],
+        ["/clients", "Clientes", Users],
+        ["/inventory", "Inventario", Package],
+        ["/calendar", "Cobros", CalendarDays],
+        ["/requests", "Solicitudes", GitPullRequest],
+        ["/chats", "Chats", MessagesSquare],
+        ["/notifications", "Notificaciones", Bell],
+        ...(manager
+          ? [
+              ["/reports", "Reportes", ChartNoAxesCombined],
+              ["/team", "Usuarios", UserCog],
+              ["/trash", "Papelera", Archive],
+            ]
+          : []),
+        ["/settings", "Configuración", Settings],
+      ];
   const title =
     nav.find(([p]) => (p === "/" ? route === "/" : route.startsWith(p)))?.[1] ||
     "Detalle";
@@ -170,7 +193,8 @@ function App() {
     user,
     admin,
     manager,
-    group,
+    group: activeGroup,
+    setGroup,
     scope,
     navigate,
     revision,
@@ -179,7 +203,30 @@ function App() {
     groupData: groupData.data?.items || [],
   };
   let content;
-  if (route === "/") content = <Dashboard />;
+  if (route === "/") content = admin ? <AdminHome /> : <Dashboard />;
+  else if (admin && route.startsWith("/groups/"))
+    content = (
+      <AdminGroupReview
+        id={reviewId}
+        section={route.split("/")[3] || "overview"}
+      />
+    );
+  else if (admin && route.startsWith("/support"))
+    content = <Chats id={route.split("/")[2]} supportOnly />;
+  else if (admin && route === "/notes") content = <AdminNotes />;
+  else if (admin && route === "/activity") content = <AdminActivity />;
+  else if (
+    admin &&
+    [
+      "/clients",
+      "/inventory",
+      "/calendar",
+      "/requests",
+      "/reports",
+      "/trash",
+    ].includes(route)
+  )
+    content = <Groups />;
   else if (route === "/clients") content = <Clients />;
   else if (route.startsWith("/clients/"))
     content = <ClientDetail id={route.split("/")[2]} />;
@@ -196,7 +243,7 @@ function App() {
   else if (route === "/groups" && admin) content = <Groups />;
   else if (route === "/trash" && manager) content = <Trash />;
   else if (route === "/settings") content = <SettingsPage />;
-  else content = <Dashboard />;
+  else content = admin ? <AdminHome /> : <Dashboard />;
   return (
     <Context.Provider value={ctx}>
       <div
@@ -280,20 +327,6 @@ function App() {
               <span>{title}</span>
             </div>
             <div className="top-actions">
-              {admin && (
-                <select
-                  aria-label="Grupo de trabajo"
-                  value={group}
-                  onChange={(e) => setGroup(e.target.value)}
-                >
-                  <option value="">Todos los grupos</option>
-                  {groupData.data?.items.map((g) => (
-                    <option value={g.id} key={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              )}
               <button
                 className="icon-button notification-button"
                 aria-label="Ver notificaciones"
@@ -335,14 +368,22 @@ function App() {
             {content}
           </main>
           <footer className="page-footer">
-            <span>Polacos · Tu trabajo en orden</span>
+            <span>
+              Polacos ·{" "}
+              {admin
+                ? "Administración de la plataforma"
+                : "Tu trabajo en orden"}
+            </span>
             <span>Costa Rica · CRC</span>
           </footer>
         </div>
         <nav className="bottom-nav" aria-label="Navegación móvil">
           {nav
             .filter(([p]) =>
-              ["/", "/clients", "/calendar", "/chats"].includes(p),
+              (admin
+                ? ["/", "/support", "/groups", "/notes"]
+                : ["/", "/clients", "/calendar", "/chats"]
+              ).includes(p),
             )
             .map(([p, l, I]) => (
               <button
