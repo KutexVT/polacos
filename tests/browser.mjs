@@ -793,6 +793,29 @@ try {
   });
   await signOut();
   await signIn(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
+  await page.goto(base + "/groups/" + group.id + "/register");
+  await page.getByRole("button", { name: "Ver cierre", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Cierre guardado", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Marcar revisado", exact: true })
+      .count(),
+    0,
+  );
+  // Cross one real automatic refresh: administrative detail must not lose its local view.
+  await page.waitForTimeout(31000);
+  assert(
+    await page
+      .getByRole("heading", { name: "Cierre guardado", exact: true })
+      .isVisible(),
+  );
+  await page.screenshot({
+    path: ".local/screenshots/cash-admin-reviewed.png",
+    fullPage: true,
+    animations: "disabled",
+  });
   await writeFile(
     ".local/grid-layout-result.json",
     JSON.stringify(gridResults, null, 2),

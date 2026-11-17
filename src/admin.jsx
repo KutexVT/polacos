@@ -594,7 +594,7 @@ export function AdminGroupReview({ id, section = "overview" }) {
       >
         Todos los grupos
       </Button>
-      <State {...state}>
+      <State {...state} loading={state.loading && !g}>
         {g && (
           <>
             <div className="review-heading">
