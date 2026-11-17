@@ -325,3 +325,7 @@ Entregar:
 - Resumen de lo implementado y cualquier bloqueo real o comprobación pendiente
 
 Continúa hasta completar el alcance. Una pantalla estática, botones sin lógica o datos ficticios no cumplen la entrega
+
+## Ampliación: cierre de caja y contador de efectivo
+
+Solicitud posterior del usuario: reproducir el funcionamiento de Bar Chana adaptado a pagos de Polacos. El polaco ve únicamente sus cobros. El dueño elige solo él o todo el equipo. El polaco puede enviar su cierre al dueño para revisión. Se incluye también el contador independiente de billetes y monedas. Flujo, permisos, corte, medios de pago, conservación y diferencias descritos en `CAJA.md`.

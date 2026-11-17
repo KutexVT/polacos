@@ -12,3 +12,6 @@ El alcance acordado completo está en docs/REQUISITOS.md. Dinero exacto en CRC. 
 Uso prioritario desde celular. Texto legible al aire libre, controles amplios, etiquetas y estados textuales.
 ## Principios
 La confirmación del servidor precede al éxito visual. Historia de pagos corregible y trazable. Las reservas bloquean stock hasta decisión final. Datos purgados no sostienen estadísticas ocultas.
+
+## Caja
+Cada polaco cierra solo los cobros que registró y puede enviar el cierre al dueño. El dueño elige sus propios cobros o todo el equipo y revisa los cierres recibidos con una nota. El administrador solo consulta desde la revisión del grupo. Contador independiente de billetes/monedas con el mismo funcionamiento de Bar Chana. Medios separados: efectivo, SINPE, tarjeta y mixto; los pagos anteriores sin medio permanecen sin clasificar. Cierres congelados, revisiones y contrapartidas trazables.

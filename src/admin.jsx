@@ -13,6 +13,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useApp } from "./main";
+import { CashRegister } from "./register";
 import { Heading, Clients, Inventory } from "./commerce";
 import { Team, Trash } from "./management";
 import { Requests, Chats } from "./social";
@@ -582,6 +583,7 @@ export function AdminGroupReview({ id, section = "overview" }) {
     ["chats", "Conversaciones"],
     ["notes", "Notas"],
     ["trash", "Papelera"],
+    ["register", "Cierres de caja"],
   ];
   return (
     <>
@@ -679,6 +681,8 @@ export function AdminGroupReview({ id, section = "overview" }) {
               <Chats />
             ) : section === "notes" ? (
               <AdminNotes groupId={id} />
+            ) : section === "register" ? (
+              <CashRegister />
             ) : section === "trash" ? (
               <Trash />
             ) : (

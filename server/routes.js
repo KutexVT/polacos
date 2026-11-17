@@ -1,4 +1,5 @@
 import { pool, tx, one, check, audit, notify } from "./db.js";
+import { paymentSchema, paymentMethodValues } from "./payment-methods.js";
 import { publicUser, hashPassword } from "./auth.js";
 import {
   groupAccess,
@@ -999,6 +1000,7 @@ export function routes(app) {
       targets: z.array(z.string().max(70)).max(1000).default([]),
       paid_on: z.string(),
       note: z.string().max(1000).default(""),
+      payment: paymentSchema.optional(),
       idempotency_key: key,
     }),
     async (db, u, b, req) => {
@@ -1014,8 +1016,13 @@ export function routes(app) {
         [u.id, b.idempotency_key],
       );
       if (duplicate) {
+        const split = paymentMethodValues(b.payment, cents(b.amount));
         check(
-          duplicate.purchase_id === p.id &&
+          Object.keys(split).every(
+            (k) => (duplicate[k] ?? null) === split[k],
+          ) &&
+            duplicate.note === b.note &&
+            duplicate.purchase_id === p.id &&
             duplicate.amount === cents(b.amount) &&
             duplicate.kind === b.kind &&
             duplicate.paid_on === b.paid_on &&
@@ -1036,11 +1043,12 @@ export function routes(app) {
         targets: b.targets,
         paid_on: date(b.paid_on),
         note: b.note,
+        ...paymentMethodValues(b.payment, cents(b.amount)),
       };
       const result = ledger(p, [...(await paymentRows(db, p.id)), pay]);
       const created = await one(
         db,
-        "INSERT INTO payments(purchase_id,amount,kind,targets,paid_on,note,created_by,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",
+        "INSERT INTO payments(purchase_id,amount,kind,targets,paid_on,note,created_by,idempotency_key,payment_cash,payment_sinpe,payment_card,cash_received,cash_change) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *",
         [
           p.id,
           pay.amount,
@@ -1050,6 +1058,11 @@ export function routes(app) {
           pay.note,
           u.id,
           b.idempotency_key,
+          pay.payment_cash,
+          pay.payment_sinpe,
+          pay.payment_card,
+          pay.cash_received,
+          pay.cash_change,
         ],
       );
       await db.query("UPDATE purchases SET status=$2 WHERE id=$1", [
@@ -1068,6 +1081,7 @@ export function routes(app) {
       amount: amount.optional(),
       paid_on: z.string().optional(),
       voided: z.boolean().optional(),
+      payment: paymentSchema.optional(),
       reason: z.string().min(1).max(1000),
     }),
     async (db, u, b, req) => {
@@ -1085,14 +1099,29 @@ export function routes(app) {
         amount: b.amount === undefined ? pay.amount : cents(b.amount),
         paid_on: b.paid_on ? date(b.paid_on) : pay.paid_on,
         voided: b.voided ?? pay.voided,
+        ...paymentMethodValues(
+          b.payment,
+          b.amount === undefined ? pay.amount : cents(b.amount),
+          pay,
+        ),
       };
       const payments = (await paymentRows(db, p.id)).map((r) =>
         r.id === pay.id ? n : r,
       );
       const l = ledger(p, payments);
       await db.query(
-        "UPDATE payments SET amount=$2,paid_on=$3,voided=$4 WHERE id=$1",
-        [pay.id, n.amount, n.paid_on, n.voided],
+        "UPDATE payments SET amount=$2,paid_on=$3,voided=$4,payment_cash=$5,payment_sinpe=$6,payment_card=$7,cash_received=$8,cash_change=$9 WHERE id=$1",
+        [
+          pay.id,
+          n.amount,
+          n.paid_on,
+          n.voided,
+          n.payment_cash,
+          n.payment_sinpe,
+          n.payment_card,
+          n.cash_received,
+          n.cash_change,
+        ],
       );
       if (p.status !== "cancelled")
         await db.query("UPDATE purchases SET status=$2 WHERE id=$1", [

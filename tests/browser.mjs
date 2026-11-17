@@ -642,6 +642,155 @@ try {
     "Licuadora Oster",
   );
   await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  // Full cash workflow: independent count -> personal payment -> saved closing -> owner review.
+  await signOut();
+  await signIn("browser_worker_" + suffix);
+  await page.goto(base + "/purchases/" + pendingId);
+  await page
+    .getByRole("button", { name: "Registrar pago", exact: true })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  await page.getByLabel("Monto recibido (₡)").fill("1000");
+  await page.getByLabel("Medio de pago", { exact: true }).selectOption("mixed");
+  await page.getByLabel("Efectivo (₡)", { exact: true }).fill("500");
+  await page.getByLabel("SINPE (₡)", { exact: true }).fill("500");
+  await page.getByLabel("Efectivo entregado (₡)", { exact: true }).fill("1000");
+  await page
+    .getByRole("button", { name: "Confirmar y registrar pago", exact: true })
+    .click();
+  await closed();
+  const cashPayment = (await api("/purchases/" + pendingId)).payments.find(
+    (x) => x.created_by === worker.id && x.payment_cash === 50000,
+  );
+  assert(cashPayment);
+  assert.equal(cashPayment.cash_change, 50000);
+  await page.goto(base + "/cash");
+  await page
+    .getByRole("heading", { name: "Contar efectivo", exact: true })
+    .waitFor();
+  await page
+    .getByLabel("Cantidad de monedas de ₡500", { exact: true })
+    .fill("1");
+  assert(
+    (
+      await page.getByLabel("Total contado", { exact: true }).innerText()
+    ).includes("500"),
+  );
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth + 1,
+      ),
+      false,
+      "Contador sin desborde " + width,
+    );
+    await page.screenshot({
+      path: `.local/screenshots/cash-counter-${width}.png`,
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+  await page
+    .getByRole("button", { name: "Usar este conteo en el cierre", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Nuevo cierre", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Actualizar resumen", exact: true })
+    .click();
+  await page
+    .getByLabel("Fondo inicial de este intervalo (₡)", { exact: true })
+    .waitFor();
+  await page
+    .getByLabel("Fondo inicial de este intervalo (₡)", { exact: true })
+    .fill("0");
+  await page
+    .getByLabel("SINPE verificado en el intervalo (₡)", { exact: true })
+    .fill("500");
+  await page
+    .getByLabel("Tarjeta verificada en el intervalo (₡)", { exact: true })
+    .fill("0");
+  await page
+    .getByRole("button", { name: "Revisar cierre de caja", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Confirmar cierre de caja", exact: true })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Confirmar y guardar cierre", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Cierre guardado", exact: true })
+    .waitFor();
+  const workerClosing = (await api("/register/closings")).rows[0];
+  assert.equal(workerClosing.difference_cash, 0);
+  const closureBefore = await api("/register/closings/" + workerClosing.id);
+  await page
+    .getByRole("button", { name: "Enviar al dueño", exact: true })
+    .click();
+  await page
+    .getByRole("heading", {
+      name: "Enviado al dueño · Pendiente de revisión",
+      exact: true,
+    })
+    .waitFor();
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth + 1,
+      ),
+      false,
+      "Cierre sin desborde " + width,
+    );
+    await page.screenshot({
+      path: `.local/screenshots/cash-closing-${width}.png`,
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+  await signOut();
+  await signIn("browser_owner_" + suffix);
+  await page.goto(base + "/register");
+  await page.getByLabel("Caja", { exact: true }).selectOption("team");
+  await page.getByRole("button", { name: "Nuevo cierre", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Actualizar resumen", exact: true })
+    .click();
+  await page
+    .getByLabel("Fondo inicial de este intervalo (₡)", { exact: true })
+    .waitFor();
+  await page
+    .getByRole("heading", { name: "Cierre de caja", exact: true })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Historial de cierres", exact: true })
+    .click();
+  await page.getByLabel("Caja", { exact: true }).selectOption("inbox");
+  await page.getByRole("button", { name: "Ver cierre", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Marcar revisado", exact: true })
+    .waitFor();
+  await page
+    .getByLabel("Nota para el polaco", { exact: true })
+    .fill("Recibido y verificado en navegador");
+  await page
+    .getByRole("button", { name: "Marcar revisado", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Revisado por el dueño", exact: true })
+    .waitFor();
+  await page.reload();
+  await page.getByLabel("Caja", { exact: true }).selectOption("inbox");
+  await page.getByRole("button", { name: "Ver cierre", exact: true }).click();
+  const closureAfter = await api("/register/closings/" + workerClosing.id);
+  assert.deepEqual(closureAfter.snapshot, closureBefore.snapshot);
+  assert.equal(closureAfter.review_note, "Recibido y verificado en navegador");
+  await page.screenshot({
+    path: ".local/screenshots/cash-owner-reviewed.png",
+    fullPage: true,
+    animations: "disabled",
+  });
   await signOut();
   await signIn(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
   await writeFile(

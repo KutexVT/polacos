@@ -29,6 +29,8 @@ import {
   LifeBuoy,
   StickyNote,
   Activity,
+  Wallet,
+  Banknote,
 } from "lucide-react";
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-500.css";
@@ -54,6 +56,8 @@ import {
   AdminNotes,
   AdminGroupReview,
 } from "./admin";
+import { CashRegister } from "./register";
+import { CashCounterPage } from "./cash-counter";
 import "./style.css";
 export const Context = createContext(null);
 export const useApp = () => useContext(Context);
@@ -67,7 +71,9 @@ function App() {
     [menu, setMenu] = useState(false),
     [online, setOnline] = useState(navigator.onLine),
     [onboarding, setOnboarding] = useState(false),
-    [globalError, setGlobalError] = useState("");
+    [globalError, setGlobalError] = useState(""),
+    [cashCounts, setCashCounts] = useState({});
+  useEffect(() => setCashCounts({}), [session?.user.id]);
   const navigate = useCallback((path, keepGroup = false) => {
     if (!keepGroup) setGroup("");
     history.pushState({}, "", path);
@@ -172,6 +178,8 @@ function App() {
         ["/clients", "Clientes", Users],
         ["/inventory", "Inventario", Package],
         ["/calendar", "Cobros", CalendarDays],
+        ["/register", "Cierre de caja", Wallet],
+        ["/cash", "Contar efectivo", Banknote],
         ["/requests", "Solicitudes", GitPullRequest],
         ["/chats", "Chats", MessagesSquare],
         ["/notifications", "Notificaciones", Bell],
@@ -200,6 +208,8 @@ function App() {
     revision,
     refresh,
     reload: loadSession,
+    cashCounts,
+    setCashCounts,
     groupData: groupData.data?.items || [],
   };
   let content;
@@ -227,6 +237,8 @@ function App() {
     ].includes(route)
   )
     content = <Groups />;
+  else if (!admin && route.startsWith("/register")) content = <CashRegister />;
+  else if (!admin && route === "/cash") content = <CashCounterPage />;
   else if (route === "/clients") content = <Clients />;
   else if (route.startsWith("/clients/"))
     content = <ClientDetail id={route.split("/")[2]} />;

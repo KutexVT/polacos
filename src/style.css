@@ -3218,3 +3218,306 @@ dialog::backdrop {
     width: 100%;
   }
 }
+
+/* Cash count and register use the same neutral surfaces as the rest of the app. */
+.cash-counter,
+.register-page {
+  min-width: 0;
+  max-width: 1200px;
+}
+.cash-count-summary {
+  display: grid;
+  gap: 8px;
+  padding: 22px 24px;
+  margin: 24px 0;
+  background: var(--pale);
+  color: var(--ink);
+  border-radius: 12px;
+}
+.cash-count-summary output {
+  font-size: clamp(26px, 5vw, 40px);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.cash-count-summary small {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.cash-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.cash-group {
+  min-width: 0;
+}
+.cash-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  margin: 0 0 18px;
+}
+.cash-columns,
+.cash-row {
+  display: grid;
+  grid-template-columns: minmax(60px, 1fr) 146px minmax(70px, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.cash-columns {
+  font-size: 11px;
+  color: var(--muted);
+  padding-bottom: 8px;
+}
+.cash-columns > :last-child,
+.cash-row-total {
+  text-align: right;
+}
+.cash-row {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.cash-stepper {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+}
+.cash-stepper button {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  background: var(--subtle);
+  color: var(--ink);
+  border-radius: 7px;
+}
+.cash-stepper input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  text-align: center;
+  padding: 6px 2px;
+}
+.cash-error {
+  grid-column: 1/-1;
+}
+.cash-subtotal {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+  font-weight: 600;
+}
+.register-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.register-filters .field {
+  flex: 1 1 180px;
+  margin: 0;
+  min-width: 0;
+}
+.register-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  margin: 18px 0;
+}
+.register-record {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+.register-record h2,
+.register-record h3,
+.register-record p {
+  margin: 0;
+}
+.register-record h2 {
+  font-size: 20px;
+}
+.register-record p,
+.register-record small {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.register-record .button {
+  margin-top: auto;
+}
+.register-totals {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  border-block: 1px solid var(--border);
+  padding: 22px 0;
+  margin: 24px 0;
+}
+.register-totals dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.register-totals dd {
+  font-size: 24px;
+  margin: 10px 0 0;
+  font-weight: 600;
+}
+.register-details > details,
+.register-saved-count {
+  margin: 18px 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 18px;
+}
+.register-details summary,
+.register-saved-count summary {
+  cursor: pointer;
+  font-weight: 500;
+  line-height: 1.7;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+.register-page p {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.register-status,
+.register-delivery {
+  background: var(--pale);
+  padding: 10px 12px;
+  border-radius: 7px;
+  color: var(--ink);
+  font-size: 12px;
+}
+.register-delivery {
+  margin: 24px 0;
+  padding: 18px;
+}
+.register-delivery h3 {
+  margin: 0;
+}
+.register-reconciliation {
+  margin: 26px 0;
+}
+.register-reconciliation .record-table {
+  margin-top: 14px;
+}
+.register-reconciliation tr {
+  grid-template-columns: 1fr !important;
+}
+.register-reconciliation td:first-child {
+  font-weight: 600;
+}
+.register-cutoff,
+.register-scope {
+  font-weight: 500;
+  margin-top: 24px;
+}
+.register-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.register-pagination span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.register-audit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.register-event-values {
+  background: var(--subtle);
+  padding: 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  margin: 0;
+}
+.register-event-values > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+.register-event-values dt {
+  color: var(--muted);
+}
+.register-event-values dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.register-event {
+  margin: 14px 0;
+}
+.register-confirm {
+  max-width: 900px;
+}
+@media (max-width: 1200px) {
+  .cash-groups {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .cash-columns,
+  .cash-row {
+    grid-template-columns: minmax(60px, 1fr) 146px;
+  }
+  .cash-columns > :last-child {
+    display: none;
+  }
+  .cash-row-total {
+    grid-column: 1/-1;
+    display: flex;
+    justify-content: space-between;
+  }
+  .cash-row-total::before {
+    content: "Subtotal";
+    color: var(--muted);
+  }
+  .cash-count-summary {
+    padding: 18px;
+  }
+  .cash-counter .section-heading {
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .cash-counter input {
+    font-size: 16px;
+  }
+  .register-audit {
+    grid-template-columns: 1fr;
+  }
+  .register-totals {
+    gap: 24px;
+  }
+  .register-filters > .button {
+    width: 100%;
+  }
+  .register-confirm > .button {
+    width: 100%;
+  }
+  .register-page .section-heading {
+    flex-wrap: wrap;
+  }
+}
+.cash-count-action {
+  margin-top: 28px;
+}

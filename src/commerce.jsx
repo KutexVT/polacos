@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { PaymentMethods, paymentFromForm } from "./payment-methods";
+import { methods, methodNames } from "../shared/cash-count";
 import {
   Plus,
   ArrowLeft,
@@ -937,6 +939,22 @@ export function PurchaseDetail({ id }) {
                           · {day(pay.paid_on)} ·{" "}
                           {pay.actor_name || "Usuario retirado"}
                         </small>
+                        <small>
+                          {pay.payment_cash == null
+                            ? "Medio sin clasificar"
+                            : methods
+                                .filter((m) => pay["payment_" + m] > 0)
+                                .map(
+                                  (m) =>
+                                    methodNames[m] +
+                                    ": " +
+                                    money(pay["payment_" + m]),
+                                )
+                                .join(" · ")}
+                        </small>
+                        {pay.cash_change > 0 && (
+                          <small>Vuelto: {money(pay.cash_change)}</small>
+                        )}
                         <small>{pay.note}</small>
                       </div>
                       {p.can_edit && (
@@ -1003,51 +1021,10 @@ export function PurchaseDetail({ id }) {
         <PaymentForm p={p} onClose={() => setModal(null)} />
       )}
       {modal?.type === "correct" && (
-        <Modal title="Corregir pago" onClose={() => setModal(null)}>
-          <p>
-            El valor anterior se conserva en el historial. Se recalcularán saldo
-            y cuotas
-          </p>
-          <Form
-            submit="Confirmar corrección"
-            onSubmit={async (b) => {
-              b.voided = b.voided === "yes";
-              await api("/payments/" + modal.payment.id, {
-                method: "PATCH",
-                body: b,
-              });
-              a.refresh("Pago corregido");
-              setModal(null);
-            }}
-          >
-            <Field
-              label="Monto (₡)"
-              name="amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              required
-              defaultValue={modal.payment.amount / 100}
-            />
-            <Field
-              label="Fecha del pago"
-              name="paid_on"
-              type="date"
-              required
-              defaultValue={modal.payment.paid_on}
-            />
-            <Field label="Estado">
-              <select
-                name="voided"
-                defaultValue={modal.payment.voided ? "yes" : "no"}
-              >
-                <option value="no">Vigente</option>
-                <option value="yes">Anulado</option>
-              </select>
-            </Field>
-            <Field label="Motivo de la corrección" name="reason" required />
-          </Form>
-        </Modal>
+        <PaymentCorrection
+          payment={modal.payment}
+          onClose={() => setModal(null)}
+        />
       )}
       {["original", "propose"].includes(modal?.type) && (
         <ResolvePurchase
@@ -1091,6 +1068,58 @@ export function PurchaseDetail({ id }) {
     </>
   );
 }
+function PaymentCorrection({ payment, onClose }) {
+  const a = useApp(),
+    [amount, setAmount] = useState(payment.amount / 100);
+  return (
+    <Modal title="Corregir pago" onClose={onClose}>
+      <p>
+        El valor anterior se conserva en el historial. Se recalcularán saldo y
+        cuotas
+      </p>
+      <Form
+        submit="Confirmar corrección"
+        onSubmit={async (b) => {
+          await api("/payments/" + payment.id, {
+            method: "PATCH",
+            body: {
+              ...paymentFromForm(b, amount),
+              amount,
+              voided: b.voided === "yes",
+            },
+          });
+          a.refresh("Pago corregido");
+          onClose();
+        }}
+      >
+        <Field
+          label="Monto (₡)"
+          type="number"
+          min="0.01"
+          step="0.01"
+          required
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+        <Field
+          label="Fecha del pago"
+          name="paid_on"
+          type="date"
+          required
+          defaultValue={payment.paid_on}
+        />
+        <PaymentMethods amount={amount} previous={payment} />
+        <Field label="Estado">
+          <select name="voided" defaultValue={payment.voided ? "yes" : "no"}>
+            <option value="no">Vigente</option>
+            <option value="yes">Anulado</option>
+          </select>
+        </Field>
+        <Field label="Motivo de la corrección" name="reason" required />
+      </Form>
+    </Modal>
+  );
+}
 function PaymentForm({ p, onClose }) {
   const a = useApp(),
     [kind, setKind] = useState("installment"),
@@ -1112,7 +1141,7 @@ function PaymentForm({ p, onClose }) {
           await api(`/purchases/${p.id}/payments`, {
             method: "POST",
             body: {
-              ...b,
+              ...paymentFromForm(b, amount),
               amount,
               kind,
               targets: kind === "capital" ? [] : targets,
@@ -1180,6 +1209,7 @@ function PaymentForm({ p, onClose }) {
             defaultValue={a.session.today}
           />
         </div>
+        <PaymentMethods amount={amount} />
         <Field label="Nota opcional" name="note" />
         <p className="muted">
           No necesitas comprobante. Un pago parcial deja visible lo que falta

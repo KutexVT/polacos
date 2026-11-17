@@ -10,6 +10,7 @@ import { collaborationRoutes } from "./collaboration.js";
 import { lifecycleRoutes, runJobs } from "./lifecycle.js";
 import { adminRoutes } from "./admin.js";
 import { reportRoutes } from "./reports.js";
+import { registerRoutes } from "./register.js";
 export async function createApp() {
   await migrate();
   await bootstrap();
@@ -69,6 +70,7 @@ export async function createApp() {
   collaborationRoutes(app);
   lifecycleRoutes(app);
   reportRoutes(app);
+  registerRoutes(app);
   const streams = new Map();
   let listener;
   app.get("/api/events", (req, res) => {
