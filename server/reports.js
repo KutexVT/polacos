@@ -190,13 +190,6 @@ export function reportRoutes(app) {
           [gid],
         )
       ).n;
-      data.support = (
-        await one(
-          pool,
-          "SELECT count(*)::int n FROM conversations WHERE kind='support' AND ($1::uuid IS NULL OR group_id=$1)",
-          [gid],
-        )
-      ).n;
     }
     res.json(data);
   });

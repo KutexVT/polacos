@@ -26,9 +26,6 @@ import {
   ArrowRight,
   Check,
   WifiOff,
-  LifeBuoy,
-  StickyNote,
-  Activity,
   Wallet,
   Banknote,
 } from "lucide-react";
@@ -50,12 +47,7 @@ import {
 } from "./management";
 import { Clients, ClientDetail, Inventory, PurchaseDetail } from "./commerce";
 import { Requests, Chats } from "./social";
-import {
-  AdminHome,
-  AdminActivity,
-  AdminNotes,
-  AdminGroupReview,
-} from "./admin";
+import { AdminHome, AdminGroupReview } from "./admin";
 import { CashRegister } from "./register";
 import { CashCounterPage } from "./cash-counter";
 import "./style.css";
@@ -143,7 +135,9 @@ function App() {
     revision,
   );
   const notices = useData(
-    session ? "/notifications?limit=100" : null,
+    session && session.user.role !== "admin"
+      ? "/notifications?limit=100"
+      : null,
     revision,
   );
   if (boot)
@@ -164,14 +158,8 @@ function App() {
   const scope = (path) => path + (path.includes("?") ? "&" : "?") + groupQuery;
   const nav = admin
     ? [
-        ["/", "Resumen", LayoutDashboard],
-        ["/support", "Soporte", LifeBuoy],
+        ["/", "Estadísticas", ChartNoAxesCombined],
         ["/groups", "Grupos", Building2],
-        ["/team", "Usuarios", UserCog],
-        ["/activity", "Actividad", Activity],
-        ["/notes", "Mis notas", StickyNote],
-        ["/notifications", "Notificaciones", Bell],
-        ["/settings", "Configuración", Settings],
       ]
     : [
         ["/", "Inicio", LayoutDashboard],
@@ -213,30 +201,18 @@ function App() {
     groupData: groupData.data?.items || [],
   };
   let content;
-  if (route === "/") content = admin ? <AdminHome /> : <Dashboard />;
-  else if (admin && route.startsWith("/groups/"))
-    content = (
-      <AdminGroupReview
-        id={reviewId}
-        section={route.split("/")[3] || "overview"}
-      />
-    );
-  else if (admin && route.startsWith("/support"))
-    content = <Chats id={route.split("/")[2]} supportOnly />;
-  else if (admin && route === "/notes") content = <AdminNotes />;
-  else if (admin && route === "/activity") content = <AdminActivity />;
-  else if (
-    admin &&
-    [
-      "/clients",
-      "/inventory",
-      "/calendar",
-      "/requests",
-      "/reports",
-      "/trash",
-    ].includes(route)
-  )
-    content = <Groups />;
+  if (admin) {
+    if (route.startsWith("/groups/"))
+      content = (
+        <AdminGroupReview
+          id={reviewId}
+          section={route.split("/")[3] || "overview"}
+        />
+      );
+    else if (route === "/groups") content = <Groups />;
+    else if (route === "/settings") content = <SettingsPage />;
+    else content = <AdminHome />;
+  } else if (route === "/") content = <Dashboard />;
   else if (!admin && route.startsWith("/register")) content = <CashRegister />;
   else if (!admin && route === "/cash") content = <CashCounterPage />;
   else if (route === "/clients") content = <Clients />;
@@ -331,14 +307,18 @@ function App() {
               <span>{title}</span>
             </div>
             <div className="top-actions">
-              <button
-                className="icon-button notification-button"
-                aria-label="Ver notificaciones"
-                onClick={() => navigate("/notifications")}
-              >
-                <Bell size={21} />
-                {unread > 0 && <i />}
-              </button>
+              {!admin && (
+                <>
+                  <button
+                    className="icon-button notification-button"
+                    aria-label="Ver notificaciones"
+                    onClick={() => navigate("/notifications")}
+                  >
+                    <Bell size={21} />
+                    {unread > 0 && <i />}
+                  </button>
+                </>
+              )}
               <button
                 className="user-button"
                 onClick={() => navigate("/settings")}
@@ -376,7 +356,7 @@ function App() {
           {nav
             .filter(([p]) =>
               (admin
-                ? ["/", "/support", "/groups", "/notes"]
+                ? ["/", "/groups"]
                 : ["/", "/clients", "/calendar", "/chats"]
               ).includes(p),
             )
@@ -390,10 +370,12 @@ function App() {
                 {l}
               </button>
             ))}
-          <button onClick={() => setMenu(true)}>
-            <Menu size={21} />
-            Más
-          </button>
+          {!admin && (
+            <button onClick={() => setMenu(true)}>
+              <Menu size={21} />
+              Más
+            </button>
+          )}
         </nav>
         {toast && (
           <div className="toast" role="status">

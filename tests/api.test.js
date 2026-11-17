@@ -465,7 +465,7 @@ test("07 · Notificaciones de cobro solo al responsable y deduplicación persist
     ownerId,
   );
 });
-test("08 · Chat privado, adjuntos autorizados, soporte iniciado por trabajador y eventos aislados", async () => {
+test("08 · Chat privado, adjuntos autorizados, soporte rechazado y eventos aislados", async () => {
   const f = await file(w1.cookie, "Prueba persistente");
   const c = await ok(w1.cookie, "/conversations", {
     kind: "direct",
@@ -485,7 +485,7 @@ test("08 · Chat privado, adjuntos autorizados, soporte iniciado por trabajador 
   assert.equal(copies[0].id, copies[1].id);
   assert.equal((await request(owner, "/conversations/" + c.id)).status, 403);
   assert.equal((await request(other, "/conversations/" + c.id)).status, 403);
-  assert.equal((await request(admin, "/conversations/" + c.id)).status, 200);
+  assert.equal((await request(admin, "/conversations/" + c.id)).status, 403);
   assert.equal(
     (await fetch(base + "/api/files/" + f.id, { headers: { Cookie: other } }))
       .status,
@@ -510,24 +510,17 @@ test("08 · Chat privado, adjuntos autorizados, soporte iniciado por trabajador 
     ).status,
     403,
   );
-  const support = await ok(w1.cookie, "/conversations", {
-    kind: "support",
-    body: "Necesito ayuda",
-    idempotency_key: randomUUID(),
-  });
-  await ok(admin, "/conversations/" + support.id + "/messages", {
-    body: "Te ayudo",
-    idempotency_key: randomUUID(),
-  });
-  assert.equal(
-    (await request(owner, "/conversations/" + support.id)).status,
-    403,
-  );
-  assert(
-    (await ok(admin, "/conversations")).items.some(
-      (x) => x.id === support.id && x.group_name === group.name,
-    ),
-  );
+  for (const cookie of [owner, w1.cookie])
+    assert.equal(
+      (
+        await request(cookie, "/conversations", {
+          kind: "support",
+          body: "Canal retirado",
+          idempotency_key: randomUUID(),
+        })
+      ).status,
+      400,
+    );
   const reader = await fetch(base + "/api/events", {
     headers: { Cookie: other },
   });
@@ -640,7 +633,7 @@ test("09 · Personalización independiente y nombres de grupo exclusivos del adm
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aPAcAAAAASUVORK5CYII=",
     "base64",
   );
-  const f = await file(admin, png, "image/png", "logo-antiguo.png");
+  const f = await file(owner, png, "image/png", "logo-antiguo.png");
   assert.equal(
     (await request(admin, "/groups/" + group.id, { logo_id: f.id }, "PATCH"))
       .status,
@@ -658,7 +651,7 @@ test("09 · Personalización independiente y nombres de grupo exclusivos del adm
           headers: { Cookie: cookie },
         })
       ).status,
-      404,
+      cookie === admin ? 403 : 404,
     );
   assert(
     !(
@@ -669,220 +662,156 @@ test("09 · Personalización independiente y nombres de grupo exclusivos del adm
     ),
   );
 });
-test("09b · Administración: soporte, notas privadas, contexto y correcciones con identidad real", async () => {
-  for (const cookie of [owner, w1.cookie, other]) {
-    for (const path of [
-      "/admin/overview",
-      "/admin/activity",
-      "/admin/notes",
-      "/admin/groups/" + group.id,
-    ])
+test("09b · Estadísticas reales, grupos y retiro completo del soporte", async () => {
+  for (const cookie of [owner, w1.cookie, other])
+    for (const path of ["/admin/overview", "/admin/groups/" + group.id])
       assert.equal((await request(cookie, path)).status, 403);
-    assert.equal(
-      (await request(cookie, "/admin/notes", { title: "Privada" })).status,
-      403,
-    );
-  }
-  const support = await ok(w1.cookie, "/conversations", {
-    kind: "support",
-    body: "Necesito corregir mi perfil",
-    idempotency_key: randomUUID(),
-  });
-  assert.equal(
-    (
-      await request(
-        owner,
-        "/admin/support/" + support.id,
-        { status: "resolved" },
-        "PATCH",
-      )
-    ).status,
-    403,
-  );
-  await ok(
-    admin,
-    "/admin/support/" + support.id,
-    { status: "in_progress" },
-    "PATCH",
-  );
-  assert.equal(
-    (await ok(admin, "/conversations/" + support.id)).support_status,
-    "in_progress",
-  );
-  const note = await ok(admin, "/admin/notes", {
-    title: "Revisar perfil",
-    body: "Solo administración",
-    group_id: group.id,
-    conversation_id: support.id,
-    pinned: true,
-  });
-  assert.equal(
-    (await ok(admin, "/admin/notes?group_id=" + group.id + "&q=Revisar"))
-      .items[0].id,
-    note.id,
-  );
-  assert.equal(
-    (
-      await request(
-        admin,
-        "/admin/notes/" + note.id,
-        { ...note, group_id: g2.id },
-        "PATCH",
-      )
-    ).status,
-    400,
-  );
-  const second = await one(
+  const adminId = (await ok(admin, "/me")).user.id;
+  const f = await file(w1.cookie, "Adjunto antiguo de soporte");
+  const legacy = await one(
     pool,
-    "INSERT INTO users(role,name,username,password_hash) SELECT 'admin','Administrador QA',$1,password_hash FROM users WHERE username=$2 RETURNING id",
-    ["admin_" + suffix, process.env.ADMIN_USERNAME],
+    "INSERT INTO conversations(group_id,kind,name,created_by) VALUES($1,'support','Consulta retirada',$2) RETURNING id",
+    [group.id, w1.id],
   );
-  try {
-    const secondCookie = await login(
-      "admin_" + suffix,
-      process.env.ADMIN_PASSWORD,
-    );
+  await pool.query(
+    "INSERT INTO conversation_members(conversation_id,user_id) VALUES($1,$2),($1,$3)",
+    [legacy.id, w1.id, adminId],
+  );
+  await pool.query(
+    "INSERT INTO messages(conversation_id,sender_id,body,file_id,idempotency_key) VALUES($1,$2,$3,$4,$5)",
+    [legacy.id, w1.id, "Mensaje antiguo", f.id, randomUUID()],
+  );
+  await pool.query(
+    "INSERT INTO notifications(user_id,title,path,subject_id,dedupe) VALUES($1,'Aviso antiguo',$2,$3,$4)",
+    [w1.id, "/chats/" + legacy.id, legacy.id, randomUUID()],
+  );
+  const oldDirect = await one(
+    pool,
+    "INSERT INTO conversations(group_id,kind,name,created_by) VALUES($1,'direct','Dueño con administración',$2) RETURNING id",
+    [group.id, adminId],
+  );
+  await pool.query(
+    "INSERT INTO conversation_members(conversation_id,user_id) VALUES($1,$2),($1,$3)",
+    [
+      oldDirect.id,
+      owner === null ? null : (await ok(owner, "/me")).user.id,
+      adminId,
+    ],
+  );
+  for (const cookie of [owner, w1.cookie, admin]) {
     assert.equal(
-      (await ok(secondCookie, "/admin/notes?group_id=" + group.id)).total,
-      0,
+      (await request(cookie, "/conversations/" + legacy.id)).status,
+      cookie === admin ? 403 : 404,
     );
     assert.equal(
       (
-        await request(
-          secondCookie,
-          "/admin/notes/" + note.id,
-          { ...note, title: "No puede" },
-          "PATCH",
-        )
+        await request(cookie, "/conversations/" + legacy.id + "/messages", {
+          body: "No se puede responder",
+          idempotency_key: randomUUID(),
+        })
       ).status,
-      404,
+      cookie === admin ? 403 : 404,
     );
     assert.equal(
-      (await request(secondCookie, "/admin/notes/" + note.id, {}, "DELETE"))
+      (await request(cookie, "/conversations/" + legacy.id + "/read", {}))
         .status,
-      404,
+      cookie === admin ? 403 : 404,
     );
-    await ok(secondCookie, "/conversations/" + support.id + "/messages", {
-      body: "Te ayudo desde administración",
-      idempotency_key: randomUUID(),
-    });
-  } finally {
-    await pool.query("DELETE FROM users WHERE id=$1", [second.id]);
+    assert.equal(
+      (
+        await fetch(base + "/api/files/" + f.id, {
+          headers: { Cookie: cookie },
+        })
+      ).status,
+      403,
+    );
   }
-  await ok(
-    admin,
-    "/admin/notes/" + note.id,
-    { ...note, title: "Perfil revisado", done: true },
-    "PATCH",
-  );
-  assert.equal(
-    (await ok(admin, "/admin/notes?group_id=" + group.id + "&status=done"))
-      .items[0].title,
-    "Perfil revisado",
-  );
-  await ok(
-    admin,
-    "/admin/support/" + support.id,
-    { status: "resolved" },
-    "PATCH",
+  assert(
+    !(await ok(w1.cookie, "/conversations")).items.some(
+      (c) => c.id === legacy.id,
+    ),
   );
   assert(
-    !(
-      await ok(
-        admin,
-        "/conversations?kind=support&status=unresolved&group_id=" + group.id,
-      )
-    ).items.some((c) => c.id === support.id),
-  );
-  await ok(w1.cookie, "/conversations/" + support.id + "/messages", {
-    body: "Necesito algo más",
-    idempotency_key: randomUUID(),
-  });
-  assert.equal(
-    (await ok(admin, "/conversations/" + support.id)).support_status,
-    "open",
-  );
-  const overview = await ok(admin, "/admin/overview?group_id=" + group.id);
-  assert(overview.waiting_reply > 0);
-  assert(overview.queue.some((c) => c.id === support.id));
-  assert.equal(overview.balance, undefined);
-  const review = await ok(admin, "/admin/groups/" + group.id);
-  assert.equal(review.id, group.id);
-  assert(review.users > 0);
-  await ok(admin, "/users/" + w1.id, { name: "Polaco revisado" }, "PATCH");
-  await ok(
-    admin,
-    "/clients/" + c1.id,
-    { address: "Dirección corregida por soporte" },
-    "PATCH",
-  );
-  assert.equal(
-    (await ok(admin, "/clients/" + c1.id)).address,
-    "Dirección corregida por soporte",
-  );
-  const recorded = (await ok(admin, "/purchases/" + p1.id)).payments.find(
-    (p) => !p.voided,
-  );
-  assert(recorded);
-  await ok(
-    admin,
-    "/payments/" + recorded.id,
-    { paid_on: recorded.paid_on, reason: "Revisión de soporte" },
-    "PATCH",
+    !(await ok(owner, "/conversations")).items.some(
+      (c) => c.id === oldDirect.id,
+    ),
   );
   assert(
+    !(await ok(w1.cookie, "/notifications")).items.some(
+      (n) => n.subject_id === legacy.id,
+    ),
+  );
+  assert.equal(
     (
-      await ok(
-        admin,
-        "/admin/activity?group_id=" + group.id + "&q=Corregir pago",
-      )
-    ).items.some((r) => r.actor_role === "admin" && r.entity_id === p1.id),
-  );
-  assert.equal(
-    (await request(admin, "/admin/activity?from=2026-11-18&to=2026-11-01"))
-      .status,
+      await request(owner, "/conversations", {
+        kind: "direct",
+        members: [adminId],
+        body: "No hay canal con administración",
+        idempotency_key: randomUUID(),
+      })
+    ).status,
     400,
   );
-
-  const history = (
-    await ok(
-      admin,
-      "/admin/activity?group_id=" + group.id + "&q=Editar usuario",
-    )
-  ).items;
-  assert(
-    history.some((r) => r.actor_role === "admin" && r.entity_id === w1.id),
-  );
-  assert(!("before_data" in history[0]));
+  for (const path of [
+    "/admin/notes",
+    "/admin/activity",
+    "/notifications",
+    "/clients",
+    "/products",
+    "/purchases/" + p1.id,
+    "/register/closings",
+    "/conversations",
+  ])
+    assert.equal((await request(admin, path)).status, 403);
   assert.equal(
     (
-      await request(admin, "/purchases", {
-        client_id: c1.id,
-        product_id: product.id,
-        quantity: 1,
-        plan,
-        idempotency_key: randomUUID(),
-      })
+      await request(
+        admin,
+        "/payments/" + randomUUID(),
+        { amount: 1, reason: "No se permite" },
+        "PATCH",
+      )
     ).status,
     403,
   );
+  await ok(admin, "/users/" + w1.id, { name: "Polaco revisado" }, "PATCH");
+  assert.equal(
+    (await ok(admin, "/users?group_id=" + group.id)).items.find(
+      (u) => u.id === w1.id,
+    ).name,
+    "Polaco revisado",
+  );
+  const overview = await ok(
+    admin,
+    "/admin/overview?group_id=" + group.id + "&days=30",
+  );
+  assert.equal(overview.users, 3);
+  assert.equal(overview.groups, 1);
+  assert.equal(overview.owners, 1);
+  assert.equal(overview.workers, 2);
+  assert(overview.active_period >= 2);
+  assert(overview.active_now >= 2);
+  assert(overview.operations > 0);
+  assert(overview.clients > 0);
+  assert.equal(overview.timeline.length, 30);
+  assert(overview.timeline.some((d) => d.users === null));
+  assert(overview.group_activity.every((g) => g.id === group.id));
+  for (const key of ["balance", "collected", "queue", "open_support", "notes"])
+    assert.equal(overview[key], undefined);
+  const repeated = await ok(admin, "/admin/overview?group_id=" + group.id);
+  assert.equal(repeated.active_period, overview.active_period);
   assert.equal(
     (
-      await request(admin, "/purchases/" + p1.id + "/payments", {
-        amount: 1,
-        kind: "capital",
-        paid_on: "2026-01-31",
-        idempotency_key: randomUUID(),
-      })
-    ).status,
-    403,
+      await one(
+        pool,
+        "SELECT count(*)::int AS n FROM platform_usage_daily WHERE user_id=$1",
+        [adminId],
+      )
+    ).n,
+    0,
   );
-  await ok(admin, "/admin/notes/" + note.id, {}, "DELETE");
-  assert(
-    !(
-      await ok(admin, "/admin/notes?group_id=" + group.id + "&status=all")
-    ).items.some((n) => n.id === note.id),
-  );
+  assert.equal((await ok(admin, "/admin/groups/" + group.id)).id, group.id);
+  assert.equal((await request(admin, "/admin/overview?days=500")).status, 400);
 });
 test("10 · Papelera restaura pagos sin stock duplicado y comprueba disponibilidad", async () => {
   const before = await getProduct();

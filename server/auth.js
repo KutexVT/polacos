@@ -64,6 +64,11 @@ export async function authenticate(req, res, next) {
       [digest(token)],
     );
     check(u, "Tu sesión terminó. Inicia sesión de nuevo", 401);
+    if (u.role !== "admin")
+      await pool.query(
+        `INSERT INTO platform_usage_daily(user_id,group_id,day) VALUES($1,$2,(clock_timestamp() AT TIME ZONE 'America/Costa_Rica')::date) ON CONFLICT(user_id,day) DO UPDATE SET last_seen_at=clock_timestamp() WHERE platform_usage_daily.last_seen_at<clock_timestamp()-interval '1 minute'`,
+        [u.id, u.group_id],
+      );
     req.user = u;
     req.sessionHash = digest(token);
     next();

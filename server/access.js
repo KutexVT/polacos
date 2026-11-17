@@ -131,7 +131,16 @@ export async function visiblePurchases(db, user, groupId) {
   );
 }
 export async function conversationAccess(db, user, id) {
-  const c = await one(db, "SELECT * FROM conversations WHERE id=$1", [id]);
+  check(
+    user.role !== "admin",
+    "El administrador no participa en conversaciones",
+    403,
+  );
+  const c = await one(
+    db,
+    "SELECT c.* FROM conversations c WHERE c.id=$1 AND c.kind<>'support' AND NOT EXISTS(SELECT 1 FROM conversation_members cm JOIN users u ON u.id=cm.user_id WHERE cm.conversation_id=c.id AND u.role='admin')",
+    [id],
+  );
   check(c, "Conversación no disponible", 404);
   if (user.role !== "admin") {
     groupAccess(user, c.group_id);

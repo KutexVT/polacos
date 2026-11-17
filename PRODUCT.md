@@ -5,7 +5,7 @@ web
 ## Stack
 Delegada explícitamente por el usuario. React y Vite con Express y PostgreSQL. Una aplicación y una base de datos propias en Railway.
 ## Usuarios y propósito
-Administrador de plataforma, dueños de grupos y trabajadores que venden a crédito y cobran en Costa Rica. Los clientes son registros sin cuenta. El administrador atiende soporte y supervisa grupos, usuarios y actividad con notas privadas. Su cuenta no crea compras ni registra nuevos cobros. Para dueños y polacos el flujo principal es cliente → compra → calendario → cobro confirmado.
+Administrador de plataforma, dueños de grupos y trabajadores que venden a crédito y cobran en Costa Rica. Los clientes son registros sin cuenta. El administrador consulta estadísticas de uso y cantidades de registros. Crea grupos y administra sus usuarios y cupos. No tiene soporte, conversaciones, notas, notificaciones ni acceso a fichas comerciales o cajas. La configuración personal queda accesible desde su avatar. Para dueños y polacos el flujo principal es cliente → compra → calendario → cobro confirmado.
 ## Restricciones
 El alcance acordado completo está en docs/REQUISITOS.md. Dinero exacto en CRC. Zona America/Costa_Rica. Aislamiento de grupos y permisos en servidor. Sin intereses ni pasarela. Datos de demostración únicamente en el grupo de pruebas autorizado por el usuario.
 ## Accesibilidad
@@ -14,4 +14,4 @@ Uso prioritario desde celular. Texto legible al aire libre, controles amplios, e
 La confirmación del servidor precede al éxito visual. Historia de pagos corregible y trazable. Las reservas bloquean stock hasta decisión final. Datos purgados no sostienen estadísticas ocultas.
 
 ## Caja
-Cada polaco cierra solo los cobros que registró y puede enviar el cierre al dueño. El dueño elige sus propios cobros o todo el equipo y revisa los cierres recibidos con una nota. El administrador solo consulta desde la revisión del grupo. Contador independiente de billetes/monedas con el mismo funcionamiento de Bar Chana. Medios separados: efectivo, SINPE, tarjeta y mixto; los pagos anteriores sin medio permanecen sin clasificar. Cierres congelados, revisiones y contrapartidas trazables.
+Cada polaco cierra solo los cobros que registró y puede enviar el cierre al dueño. El dueño elige sus propios cobros o todo el equipo y revisa los cierres recibidos con una nota. El administrador de plataforma no accede a cajas ni cierres. Contador independiente de billetes/monedas con el mismo funcionamiento de Bar Chana. Medios separados: efectivo, SINPE, tarjeta y mixto; los pagos anteriores sin medio permanecen sin clasificar. Cierres congelados, revisiones y contrapartidas trazables.

@@ -8,7 +8,7 @@ Basado en el cierre y el contador de `/home/kutex/Documentos/ChatGPT/Chana 2`. S
 - El dueño elige **Solo mis cobros** o **Todo el equipo**. La caja del equipo reúne los pagos de todas las personas y los movimientos personales y del equipo una sola vez. Para comparar tiene que contar el efectivo de todas esas cajas.
 - Los cierres personales del polaco no aparecen al dueño hasta pulsar **Enviar al dueño**. El dueño los encuentra en **Enviados para revisar** y recibe una notificación. Puede marcar revisado y dejar una nota. La revisión no cambia cifras ni el conteo del cierre.
 - Cada nueva revisión se guarda y se envía por separado. El cierre anterior permanece disponible.
-- El administrador consulta cierres desde **Grupos → revisión del grupo → Cierres de caja**. No tiene una caja propia ni registra movimientos, cierres, envíos o revisiones de dueño.
+- El administrador de plataforma no accede a cajas ni cierres. Estas funciones quedan exclusivamente para dueños y polacos.
 
 ## Uso
 

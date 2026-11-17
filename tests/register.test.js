@@ -407,9 +407,9 @@ test("Caja 06 · Envío al dueño y revisión trazable sin cambiar el cierre", a
     404,
   );
   assert.equal(
-    (await ok(admin, "/register/closings/" + closing.id + "?group_id=" + gid))
-      .id,
-    closing.id,
+    (await req(admin, "/register/closings/" + closing.id + "?group_id=" + gid))
+      .status,
+    403,
   );
   assert.equal(
     (await req(admin, "/register/closings", await draft(owner))).status,

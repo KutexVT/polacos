@@ -8,7 +8,7 @@ import { bootstrap, authenticate, authRoutes } from "./auth.js";
 import { routes } from "./routes.js";
 import { collaborationRoutes } from "./collaboration.js";
 import { lifecycleRoutes, runJobs } from "./lifecycle.js";
-import { adminRoutes } from "./admin.js";
+import { adminRoutes, adminAccess } from "./admin.js";
 import { reportRoutes } from "./reports.js";
 import { registerRoutes } from "./register.js";
 export async function createApp() {
@@ -65,6 +65,7 @@ export async function createApp() {
   });
   authRoutes(app);
   app.use("/api", authenticate);
+  app.use("/api", adminAccess);
   adminRoutes(app);
   routes(app);
   collaborationRoutes(app);

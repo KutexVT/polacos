@@ -181,23 +181,6 @@ export function Dashboard() {
                     <ArrowUpRight />
                   </button>
                 </div>
-                {a.admin && (
-                  <div className="request-summary">
-                    <div>
-                      <h3>Soporte</h3>
-                      <p>
-                        {r.support} conversaciones · {r.messages} mensajes
-                      </p>
-                    </div>
-                    <button
-                      className="icon-button"
-                      aria-label="Abrir soporte"
-                      onClick={() => a.navigate("/chats")}
-                    >
-                      <ArrowUpRight />
-                    </button>
-                  </div>
-                )}
               </aside>
             </div>
             <section className="section">
@@ -465,16 +448,6 @@ export function Reports() {
               <h2>Por trabajador</h2>
               <Comparison rows={r.workers} />
             </section>
-            {a.admin && (
-              <section className="section">
-                <h2>Por grupo</h2>
-                <Comparison rows={r.groups} />
-                <p>
-                  {r.users} usuarios · {r.messages} mensajes · {r.support}{" "}
-                  conversaciones de soporte
-                </p>
-              </section>
-            )}
             <section className="section">
               <h2>Cobros por fecha</h2>
               <CollectionsChart data={r.evolution} />
@@ -1133,8 +1106,8 @@ export function SettingsPage() {
             <p>Moneda: colones costarricenses</p>
             <p>Calendarios: America/Costa_Rica</p>
             <p>
-              Los chats pueden ser consultados por el administrador general. No
-              están cifrados de extremo a extremo
+              Solo los participantes pueden consultar sus chats. No están
+              cifrados de extremo a extremo
             </p>
             <p>
               Los registros de papelera se eliminan después de 30 días. Los

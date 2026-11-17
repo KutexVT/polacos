@@ -186,7 +186,7 @@ export function collaborationRoutes(app) {
   app.get("/api/conversations", async (req, res) => {
     const rows = (
       await pool.query(
-        `SELECT c.*,u.name AS creator_name,u.role AS creator_role${req.user.role === "admin" ? ",g.name AS group_name" : ""},(SELECT count(*)::int FROM messages m WHERE m.conversation_id=c.id) AS message_count,(SELECT count(*)::int FROM messages m JOIN conversation_members cm ON cm.conversation_id=m.conversation_id AND cm.user_id=$1 WHERE m.conversation_id=c.id AND m.created_at>cm.read_at AND m.sender_id<>$1) AS unread,(SELECT max(created_at) FROM messages WHERE conversation_id=c.id) AS last_message_at FROM conversations c LEFT JOIN users u ON u.id=c.created_by LEFT JOIN groups g ON g.id=c.group_id WHERE ($2::boolean OR EXISTS(SELECT 1 FROM conversation_members cm WHERE cm.conversation_id=c.id AND cm.user_id=$1)) AND ($3::uuid IS NULL OR c.group_id=$3) ORDER BY last_message_at DESC NULLS LAST`,
+        `SELECT c.*,u.name AS creator_name,u.role AS creator_role${req.user.role === "admin" ? ",g.name AS group_name" : ""},(SELECT count(*)::int FROM messages m WHERE m.conversation_id=c.id) AS message_count,(SELECT count(*)::int FROM messages m JOIN conversation_members cm ON cm.conversation_id=m.conversation_id AND cm.user_id=$1 WHERE m.conversation_id=c.id AND m.created_at>cm.read_at AND m.sender_id<>$1) AS unread,(SELECT max(created_at) FROM messages WHERE conversation_id=c.id) AS last_message_at FROM conversations c LEFT JOIN users u ON u.id=c.created_by LEFT JOIN groups g ON g.id=c.group_id WHERE c.kind<>'support' AND NOT EXISTS(SELECT 1 FROM conversation_members retired JOIN users au ON au.id=retired.user_id WHERE retired.conversation_id=c.id AND au.role='admin') AND ($2::boolean OR EXISTS(SELECT 1 FROM conversation_members cm WHERE cm.conversation_id=c.id AND cm.user_id=$1)) AND ($3::uuid IS NULL OR c.group_id=$3) ORDER BY last_message_at DESC NULLS LAST`,
         [
           req.user.id,
           req.user.role === "admin",
@@ -198,26 +198,17 @@ export function collaborationRoutes(app) {
     ).rows;
     res.json(
       list(
-        rows.filter(
-          (c) =>
-            (!req.query.kind || c.kind === req.query.kind) &&
-            (!req.query.status ||
-              req.query.status === "all" ||
-              (req.query.status === "unresolved"
-                ? c.support_status !== "resolved"
-                : c.support_status === req.query.status)),
-        ),
+        rows.filter((c) => !req.query.kind || c.kind === req.query.kind),
         req,
       ),
     );
   });
-  // A support thread is created atomically with its first message.
   write(
     app,
     "post",
     "/api/conversations",
     z.object({
-      kind: z.enum(["direct", "group", "support"]),
+      kind: z.enum(["direct", "group"]),
       name: name.optional(),
       members: z.array(uuid).max(100).default([]),
       body: z.string().max(5000).default(""),
@@ -238,58 +229,24 @@ export function collaborationRoutes(app) {
         gid = u.group_id;
       let title = b.name;
       check(b.body.trim() || b.file_id, "Escribe el primer mensaje");
-      if (b.kind === "support") {
-        check(u.role !== "admin", "Responde desde una conversación recibida");
-        const admin = await one(
-          db,
-          "SELECT id FROM users WHERE role='admin' AND deleted_at IS NULL ORDER BY created_at LIMIT 1",
+      check(
+        u.role !== "admin",
+        "El administrador no participa en conversaciones",
+        403,
+      );
+      check(members.length >= 2, "Selecciona al menos un compañero");
+      if (b.kind === "direct")
+        check(members.length === 2, "El chat individual es entre dos personas");
+      for (const member of members.filter((id) => id !== u.id)) {
+        const target = await activeUser(db, member, u.group_id);
+        check(
+          target.role !== "admin",
+          "Selecciona una persona de tu equipo",
+          403,
         );
-        check(admin, "Soporte no disponible");
-        members = [u.id, admin.id];
-        title = `Soporte · ${u.name}`;
-        const old = await one(
-          db,
-          "SELECT c.id FROM conversations c JOIN conversation_members cm ON cm.conversation_id=c.id WHERE c.kind='support' AND c.created_by=$1 AND cm.user_id=$1",
-          [u.id],
-        );
-        if (old) {
-          await sendMessage(db, u, old.id, b);
-          return old;
-        }
-      } else {
-        check(members.length >= 2, "Selecciona al menos un compañero");
-        if (b.kind === "direct")
-          check(
-            members.length === 2,
-            "El chat individual es entre dos personas",
-          );
-        for (const id of members.filter((id) => id !== u.id)) {
-          const target = await one(
-            db,
-            "SELECT * FROM users WHERE id=$1 AND deleted_at IS NULL",
-            [id],
-          );
-          check(target, "Participante no disponible");
-          if (u.role === "admin") {
-            check(
-              target.role === "owner",
-              "El administrador solo inicia conversaciones con dueños",
-              403,
-            );
-            check(
-              !gid || gid === target.group_id,
-              "Los participantes deben pertenecer al mismo grupo",
-            );
-            gid = target.group_id;
-          } else {
-            groupAccess(u, target.group_id);
-            check(target.role !== "admin", "Usa el canal Soporte");
-          }
-          title ||= `${u.name} · ${target.name}`;
-        }
-        if (b.kind === "group")
-          check(b.name, "Escribe un nombre para el grupo");
+        title ||= `${u.name} · ${target.name}`;
       }
+      if (b.kind === "group") check(b.name, "Escribe un nombre para el grupo");
       const c = await one(
         db,
         "INSERT INTO conversations(group_id,kind,name,created_by) VALUES($1,$2,$3,$4) RETURNING *",
@@ -322,9 +279,7 @@ export function collaborationRoutes(app) {
       ...c,
       messages: list(rows, req),
       members,
-      can_send:
-        (req.user.role === "admin" && c.kind === "support") ||
-        members.some((m) => m.id === req.user.id && !m.deleted_at),
+      can_send: members.some((m) => m.id === req.user.id && !m.deleted_at),
     });
   });
   write(
@@ -333,12 +288,7 @@ export function collaborationRoutes(app) {
     "/api/conversations/:id/messages",
     z.object({ body: text, file_id: uuid.optional(), idempotency_key: key }),
     async (db, u, b, req) => {
-      const conversation = await conversationAccess(db, u, req.params.id);
-      if (u.role === "admin" && conversation.kind === "support")
-        await db.query(
-          "INSERT INTO conversation_members(conversation_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
-          [req.params.id, u.id],
-        );
+      await conversationAccess(db, u, req.params.id);
       check(
         await one(
           db,
@@ -443,7 +393,7 @@ export function collaborationRoutes(app) {
       if (!access)
         access = !!(await one(
           pool,
-          "SELECT 1 FROM messages m JOIN conversation_members cm ON cm.conversation_id=m.conversation_id WHERE m.file_id=$1 AND cm.user_id=$2",
+          "SELECT 1 FROM messages m JOIN conversations c ON c.id=m.conversation_id JOIN conversation_members cm ON cm.conversation_id=m.conversation_id WHERE m.file_id=$1 AND cm.user_id=$2 AND c.kind<>'support' AND NOT EXISTS(SELECT 1 FROM conversation_members retired JOIN users au ON au.id=retired.user_id WHERE retired.conversation_id=c.id AND au.role='admin')",
           [f.id, req.user.id],
         ));
     }
@@ -469,7 +419,7 @@ export function collaborationRoutes(app) {
       list(
         (
           await pool.query(
-            "SELECT * FROM notifications WHERE user_id=$1 AND ($2='all' OR ($2='unread' AND read_at IS NULL) OR ($2='read' AND read_at IS NOT NULL)) ORDER BY created_at DESC",
+            "SELECT n.* FROM notifications n WHERE user_id=$1 AND n.path NOT LIKE '/support%' AND NOT EXISTS(SELECT 1 FROM conversations c WHERE c.id=n.subject_id AND (c.kind='support' OR EXISTS(SELECT 1 FROM conversation_members cm JOIN users u ON u.id=cm.user_id WHERE cm.conversation_id=c.id AND u.role='admin'))) AND ($2='all' OR ($2='unread' AND read_at IS NULL) OR ($2='read' AND read_at IS NOT NULL)) ORDER BY created_at DESC",
             [
               req.user.id,
               ["read", "unread"].includes(req.query.status)
@@ -517,23 +467,6 @@ async function sendMessage(db, u, id, b) {
     "INSERT INTO messages(conversation_id,sender_id,body,file_id,idempotency_key) VALUES($1,$2,$3,$4,$5) RETURNING *",
     [id, u.id, b.body || "", b.file_id || null, b.idempotency_key],
   );
-  if (u.role !== "admin") {
-    const reopened = await one(
-      db,
-      "UPDATE conversations SET support_status='open' WHERE id=$1 AND kind='support' AND support_status='resolved' RETURNING group_id",
-      [id],
-    );
-    if (reopened)
-      await audit(
-        db,
-        { ...u, group_id: reopened.group_id },
-        "conversation",
-        id,
-        "Reabrir soporte por nuevo mensaje",
-        { support_status: "resolved" },
-        { support_status: "open" },
-      );
-  }
   const members = (
     await db.query(
       "SELECT cm.user_id FROM conversation_members cm JOIN users u ON u.id=cm.user_id WHERE cm.conversation_id=$1 AND cm.user_id<>$2 AND u.deleted_at IS NULL",

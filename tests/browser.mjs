@@ -45,9 +45,7 @@ async function signIn(user, pw = password) {
   await page
     .getByRole("button", { name: "Iniciar sesión", exact: true })
     .click();
-  await page
-    .getByRole("heading", { name: /Hola |Centro de administración/ })
-    .waitFor();
+  await page.getByRole("heading", { name: /Hola |Estadísticas/ }).waitFor();
   if (await page.getByRole("dialog").isVisible())
     await page
       .getByRole("button", { name: "Continuar con estos colores" })
@@ -73,9 +71,7 @@ async function closed() {
 }
 async function snap(name, width, height) {
   await page.setViewportSize({ width, height });
-  await page
-    .getByRole("heading", { name: /Hola |Centro de administración/ })
-    .waitFor();
+  await page.getByRole("heading", { name: /Hola |Estadísticas/ }).waitFor();
   await page.getByText("Vendido confirmado", { exact: true }).waitFor();
   await page.screenshot({
     path: ".local/screenshots/" + name + ".png",
@@ -393,131 +389,94 @@ try {
   await page
     .getByRole("button", { name: "Nueva conversación", exact: true })
     .click();
-  await page.getByLabel("Tipo de conversación").selectOption("support");
-  await page.getByLabel("Primer mensaje").fill("Consulta privada de prueba");
-  await page.getByRole("button", { name: "Enviar primer mensaje" }).click();
-  await closed();
-  await page.getByText("Consulta privada de prueba", { exact: true }).waitFor();
+  assert.deepEqual(
+    await page
+      .getByLabel("Tipo de conversación")
+      .locator("option")
+      .evaluateAll((options) => options.map((o) => o.value)),
+    ["direct", "group"],
+  );
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  assert(
+    !(await page.locator("main").innerText()).toLowerCase().includes("soporte"),
+  );
   await signOut();
   await signIn(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
-  await page.goto(base + "/support");
-  await page.getByRole("button", { name: /Soporte · Carlos Solano/ }).click();
-  await page
-    .getByLabel("Mensaje", { exact: true })
-    .fill("Respuesta de soporte verificada");
-  await page.getByRole("button", { name: "Enviar", exact: true }).click();
-  await page
-    .getByText("Respuesta de soporte verificada", { exact: true })
-    .waitFor();
-  const supportUrl = page.url();
-  await page.getByLabel("Estado del caso").selectOption("in_progress");
-  await page
-    .getByRole("button", { name: "Actualizar estado", exact: true })
-    .click();
-  await page.getByText("Estado actualizado", { exact: true }).waitFor();
-  await page
-    .getByRole("button", { name: "Notas del caso", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Nueva nota", exact: true }).click();
-  await page
-    .getByLabel("Título", { exact: true })
-    .fill("Seguimiento QA " + suffix);
-  await page
-    .getByLabel("Nota", { exact: true })
-    .fill("Revisar acceso con el usuario");
-  await page.getByRole("button", { name: "Guardar nota", exact: true }).click();
-  await page
-    .getByRole("heading", { name: "Seguimiento QA " + suffix, exact: true })
-    .waitFor();
-  await page.reload();
-  await page
-    .getByRole("button", { name: "Notas del caso", exact: true })
-    .click();
-  await page
-    .getByRole("heading", { name: "Seguimiento QA " + suffix, exact: true })
-    .waitFor();
-  await page.goto(base + "/groups/" + group.id + "/clients");
-  await page
-    .getByRole("heading", { name: "Revisar clientes", exact: true })
-    .waitFor();
-  assert.equal(
-    await page
-      .getByRole("button", { name: "Nuevo cliente", exact: true })
-      .count(),
-    0,
-  );
-  await page.goto(base + "/team");
-  await page
-    .getByPlaceholder("Buscar nombre usuario o grupo")
-    .fill("Carlos Solano");
-  await page.getByRole("row").filter({ hasText: "Carlos Solano" }).waitFor();
-  await page.goto(base + "/activity");
-  await page.getByRole("heading", { name: "Actividad", exact: true }).waitFor();
   await page.goto(base + "/");
   await page
-    .getByRole("heading", { name: "Centro de administración", exact: true })
+    .getByRole("heading", { name: "Estadísticas", exact: true })
     .waitFor();
+  assert.deepEqual(
+    (
+      await page
+        .getByRole("navigation", { name: "Navegación principal" })
+        .getByRole("link")
+        .allTextContents()
+    ).map((s) => s.trim()),
+    ["Estadísticas", "Grupos"],
+  );
   assert.equal(
     await page
-      .getByRole("navigation", { name: "Navegación principal" })
-      .getByRole("link", { name: "Cobros", exact: true })
+      .getByRole("button", { name: "Ver notificaciones", exact: true })
       .count(),
     0,
   );
   for (const width of [1440, 820, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.screenshot({
-      path: `.local/screenshots/admin-${width}.png`,
+      path: `.local/screenshots/platform-stats-${width}.png`,
       fullPage: true,
       animations: "disabled",
     });
-    assert(
+    assert.equal(
       await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
+        () => document.documentElement.scrollWidth > innerWidth + 1,
       ),
-      "Desborde del panel de administración a " + width,
+      false,
+      "Estadísticas sin desborde " + width,
     );
   }
-  await page.goto(supportUrl);
-  await page.getByLabel("Mensaje", { exact: true }).waitFor();
-  await page.screenshot({
-    path: ".local/screenshots/admin-support-mobile.png",
-    fullPage: true,
-    animations: "disabled",
-  });
+  await page.goto(base + "/groups/" + group.id + "/team");
   await page
-    .getByRole("button", { name: "Notas del caso", exact: true })
-    .click();
-  await page
-    .getByRole("heading", { name: "Seguimiento QA " + suffix, exact: true })
+    .getByRole("heading", { name: "Usuarios del grupo", exact: true })
     .waitFor();
-  await page.screenshot({
-    path: ".local/screenshots/admin-support-notes-mobile.png",
-    fullPage: true,
-    animations: "disabled",
-  });
+  await page
+    .getByPlaceholder("Buscar nombre usuario o grupo")
+    .fill("Carlos Solano");
+  await page.getByRole("row").filter({ hasText: "Carlos Solano" }).waitFor();
+  for (const path of [
+    "/support",
+    "/notes",
+    "/activity",
+    "/chats/" + chatId,
+    "/purchases/" + pendingId,
+  ]) {
+    await page.goto(base + path);
+    await page
+      .getByRole("heading", { name: "Estadísticas", exact: true })
+      .waitFor();
+    assert.equal(
+      await page.getByRole("button", { name: "Enviar", exact: true }).count(),
+      0,
+    );
+  }
   await page.goto(base + "/settings");
   await page.getByRole("button", { name: "Oscuro", exact: true }).click();
   await page.waitForFunction(() => document.querySelector(".theme-dark"));
   await page.goto(base + "/");
   await page
-    .getByRole("heading", { name: "Centro de administración", exact: true })
+    .getByRole("heading", { name: "Estadísticas", exact: true })
     .waitFor();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({
-    path: ".local/screenshots/admin-dark.png",
+    path: ".local/screenshots/platform-stats-dark.png",
     fullPage: true,
     animations: "disabled",
   });
   const gridResults = [];
   const gridRoutes = [
-    ["clients", "/groups/" + group.id + "/clients", ".client-list"],
-    ["products", "/groups/" + group.id + "/inventory", ".product-grid"],
     ["users", "/groups/" + group.id + "/team", ".record-table tbody"],
     ["groups", "/groups", ".record-table tbody"],
-    ["activity", "/activity", ".record-table tbody"],
-    ["requests", "/groups/" + group.id + "/requests", ".request-list"],
-    ["purchase", "/purchases/" + pendingId, ".record-table tbody"],
   ];
   for (const width of [320, 390, 600, 820, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -578,7 +537,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(base + "/");
   await page
-    .getByRole("heading", { name: "Centro de administración", exact: true })
+    .getByRole("heading", { name: "Estadísticas", exact: true })
     .waitFor();
   await page.getByRole("button", { name: "Abrir menú", exact: true }).click();
   assert.equal(
@@ -597,6 +556,37 @@ try {
     .click();
   await signOut();
   await signIn("browser_owner_" + suffix);
+  for (const width of [320, 390, 600, 820, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const [name, path, selector] of [
+      ["clients", "/clients", ".client-list"],
+      ["products", "/inventory", ".product-grid"],
+    ]) {
+      await page.goto(base + path);
+      await page.locator(selector).waitFor();
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 1,
+        ),
+        false,
+        name + " sin desborde " + width,
+      );
+      const columns = await page
+        .locator(selector)
+        .evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        );
+      if (width >= 360)
+        assert(columns >= 2, name + " conserva cuadrícula " + width);
+      gridResults.push({ name, width, columns });
+      if ([390, 1440].includes(width))
+        await page.screenshot({
+          path: `.local/screenshots/grid-${name}-${width}.png`,
+          fullPage: true,
+          animations: "disabled",
+        });
+    }
+  }
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const path of ["/calendar", "/reports", "/clients/" + p.client_id]) {
@@ -794,28 +784,22 @@ try {
   await signOut();
   await signIn(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
   await page.goto(base + "/groups/" + group.id + "/register");
-  await page.getByRole("button", { name: "Ver cierre", exact: true }).click();
   await page
-    .getByRole("heading", { name: "Cierre guardado", exact: true })
+    .getByRole("heading", { name: "Uso de la página", exact: true })
     .waitFor();
   assert.equal(
     await page
-      .getByRole("button", { name: "Marcar revisado", exact: true })
+      .getByRole("heading", { name: "Cierre guardado", exact: true })
       .count(),
     0,
   );
-  // Cross one real automatic refresh: administrative detail must not lose its local view.
-  await page.waitForTimeout(31000);
-  assert(
+  assert.deepEqual(
     await page
-      .getByRole("heading", { name: "Cierre guardado", exact: true })
-      .isVisible(),
+      .getByRole("navigation", { name: "Administración del grupo" })
+      .getByRole("button")
+      .allTextContents(),
+    ["Estadísticas", "Usuarios"],
   );
-  await page.screenshot({
-    path: ".local/screenshots/cash-admin-reviewed.png",
-    fullPage: true,
-    animations: "disabled",
-  });
   await writeFile(
     ".local/grid-layout-result.json",
     JSON.stringify(gridResults, null, 2),
@@ -892,7 +876,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    "Navegador: grupo, cupos, usuarios, inventario, cliente, reserva, aprobación, capital, parcial, chat, archivo, audio, soporte, panel de administrador, notas, revisión de grupo, paleta, modos, recarga y cuadrículas de 320 a 1440 px: OK",
+    "Navegador: grupo, cupos, usuarios, inventario, cliente, reserva, aprobación, capital, parcial, chat, archivo, audio, retiro de soporte, estadísticas de plataforma, administración de grupos, paleta, modos, recarga y cuadrículas de 320 a 1440 px: OK",
   );
   await writeFile(
     ".local/browser-result.json",

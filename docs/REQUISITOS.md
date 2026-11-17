@@ -329,3 +329,7 @@ Continúa hasta completar el alcance. Una pantalla estática, botones sin lógic
 ## Ampliación: cierre de caja y contador de efectivo
 
 Solicitud posterior del usuario: reproducir el funcionamiento de Bar Chana adaptado a pagos de Polacos. El polaco ve únicamente sus cobros. El dueño elige solo él o todo el equipo. El polaco puede enviar su cierre al dueño para revisión. Se incluye también el contador independiente de billetes y monedas. Flujo, permisos, corte, medios de pago, conservación y diferencias descritos en `CAJA.md`.
+
+## Cambio posterior: administración estadística sin soporte
+
+Esta decisión reemplaza las funciones anteriores de soporte, notas y revisión de fichas comerciales por el administrador. El usuario pide retirar toda comunicación con soporte para dueños y polacos. El administrador queda exclusivamente con estadísticas de la plataforma y gestión de grupos/usuarios; su configuración personal se conserva desde el avatar. El servidor también impide recuperar las operaciones retiradas por rutas antiguas. Chats internos y cierres de dueño/polacos continúan. Detalle vigente en `ADMINISTRACION.md`.

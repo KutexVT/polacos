@@ -320,7 +320,7 @@ export async function purge(db, type, item) {
       [item.id],
     );
     await db.query(
-      "UPDATE conversations SET name=CASE WHEN kind='support' THEN 'Soporte · usuario eliminado' ELSE 'Conversación · usuario eliminado' END WHERE kind IN ('direct','support') AND id IN (SELECT conversation_id FROM conversation_members WHERE user_id=$1)",
+      "UPDATE conversations SET name='Conversación · usuario eliminado' WHERE kind IN ('direct','support') AND id IN (SELECT conversation_id FROM conversation_members WHERE user_id=$1)",
       [item.id],
     );
     await db.query(
