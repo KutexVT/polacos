@@ -34,6 +34,7 @@ import {
   PlanEditor,
   Preview,
   useData,
+  RecordTable,
 } from "./ui";
 export function Heading({ title, description, children }) {
   return (
@@ -129,11 +130,13 @@ export function Clients() {
       {shared.data?.items.some((p) => p.owner_id !== a.user.id) && (
         <section className="section">
           <h2>Compras compartidas contigo</h2>
-          {shared.data.items
-            .filter((p) => p.owner_id !== a.user.id)
-            .map((p) => (
-              <PurchaseRow key={p.id} p={p} />
-            ))}
+          <div className="purchase-grid">
+            {shared.data.items
+              .filter((p) => p.owner_id !== a.user.id)
+              .map((p) => (
+                <PurchaseRow key={p.id} p={p} />
+              ))}
+          </div>
           <Pager data={shared.data} page={sharedPage} setPage={setSharedPage} />
         </section>
       )}
@@ -324,7 +327,11 @@ export function ClientDetail({ id }) {
             <section className="section">
               <h2>Compras e historial</h2>
               {c.purchases.length ? (
-                c.purchases.map((p) => <PurchaseRow p={p} key={p.id} />)
+                <div className="purchase-grid">
+                  {c.purchases.map((p) => (
+                    <PurchaseRow p={p} key={p.id} />
+                  ))}
+                </div>
               ) : (
                 <Empty icon={Package} title="Todavía sin compras">
                   Asigna un producto del catálogo para empezar
@@ -591,75 +598,64 @@ export function Inventory() {
       </div>
       <State {...state}>
         {state.data?.items.length ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Precio unitario</th>
-                  <th>Disponible</th>
-                  <th>Reservado</th>
-                  <th>Asignado</th>
-                  {a.manager && <th>Acciones</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {state.data.items.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <div className="table-product">
-                        <Photo id={p.image_id} name={p.name} />
-                        <div>
-                          <strong>{p.name}</strong>
-                          <small>{p.description}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="numeric">{money(p.price)}</td>
-                    <td>
-                      <b className={p.available ? "" : "text-danger"}>
+          <div className="product-grid">
+            {state.data.items.map((p) => (
+              <article className="product-card" key={p.id}>
+                <Photo id={p.image_id} name={p.name} />
+                <div className="product-card-body">
+                  <h2>{p.name}</h2>
+                  {p.description && <p>{p.description}</p>}
+                  <div className="product-price">
+                    <small>Precio unitario</small>
+                    <strong>{money(p.price)}</strong>
+                  </div>
+                  <dl className="product-stock">
+                    <div>
+                      <dt>Disponibles</dt>
+                      <dd className={p.available ? "" : "text-danger"}>
                         {p.available}
-                      </b>
-                    </td>
-                    <td>{p.reserved}</td>
-                    <td>{p.assigned}</td>
-                    {a.manager && (
-                      <td>
-                        <div className="row-actions">
-                          <button
-                            className="icon-button"
-                            aria-label={"Editar " + p.name}
-                            onClick={() =>
-                              setModal({ type: "edit", product: p })
-                            }
-                          >
-                            <Pencil size={17} />
-                          </button>
-                          <button
-                            className="icon-button"
-                            aria-label={"Movimientos de " + p.name}
-                            onClick={() =>
-                              setModal({ type: "history", product: p })
-                            }
-                          >
-                            <History size={17} />
-                          </button>
-                          <button
-                            className="icon-button"
-                            aria-label={"Retirar " + p.name}
-                            onClick={() =>
-                              setModal({ type: "trash", product: p })
-                            }
-                          >
-                            <Archive size={17} />
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Reservadas</dt>
+                      <dd>{p.reserved}</dd>
+                    </div>
+                    <div>
+                      <dt>Asignadas</dt>
+                      <dd>{p.assigned}</dd>
+                    </div>
+                  </dl>
+                  {a.manager && (
+                    <div className="product-actions">
+                      <Button
+                        variant="quiet"
+                        icon={Pencil}
+                        aria-label={"Editar " + p.name}
+                        onClick={() => setModal({ type: "edit", product: p })}
+                      >
+                        Editar
+                      </Button>
+                      <button
+                        className="icon-button"
+                        aria-label={"Movimientos de " + p.name}
+                        onClick={() =>
+                          setModal({ type: "history", product: p })
+                        }
+                      >
+                        <History size={18} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label={"Retirar " + p.name}
+                        onClick={() => setModal({ type: "trash", product: p })}
+                      >
+                        <Archive size={18} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
         ) : (
           <Empty icon={Package} title="Tu catálogo empieza aquí">
@@ -886,8 +882,8 @@ export function PurchaseDetail({ id }) {
                   precio
                 </p>
               )}
-              <div className="table-wrap">
-                <table>
+              <div className="records-wrap">
+                <RecordTable>
                   <thead>
                     <tr>
                       <th>Cuota</th>
@@ -901,7 +897,7 @@ export function PurchaseDetail({ id }) {
                   <tbody>
                     {p.ledger.schedule.map((r, i) => (
                       <tr key={r.id}>
-                        <td>{i + 1}</td>
+                        <td>Cuota {i + 1}</td>
                         <td>{day(r.due)}</td>
                         <td>{money(r.amount)}</td>
                         <td>{money(r.paid)}</td>
@@ -918,7 +914,7 @@ export function PurchaseDetail({ id }) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </RecordTable>
               </div>
             </section>
             <section className="section">

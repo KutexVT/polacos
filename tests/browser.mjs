@@ -151,6 +151,27 @@ try {
     .getByRole("button", { name: "Crear cliente", exact: true })
     .click();
   await closed();
+  for (let i = 1; i <= 3; i++) {
+    await api("/products", {
+      name:
+        i === 3
+          ? "Producto de prueba con un nombre largo para comprobar que el texto se adapta a pantallas pequeñas"
+          : `Producto cuadrícula ${i}`,
+      description:
+        "Descripción del producto con información suficiente para comprobar los saltos de línea",
+      price: 15000 * i,
+      available: 10 + i,
+    });
+    await api("/clients", {
+      name:
+        i === 3
+          ? "Cliente de prueba con un nombre largo que debe seguir siendo legible en el teléfono"
+          : `Cliente cuadrícula ${i}`,
+      phone: "8888 9999",
+      address:
+        "Dirección de prueba con varios detalles para revisar el espacio disponible",
+    });
+  }
   await signOut();
   await signIn("browser_worker_" + suffix);
   await page.goto(base + "/clients");
@@ -432,6 +453,147 @@ try {
     fullPage: true,
     animations: "disabled",
   });
+  const gridResults = [];
+  const gridRoutes = [
+    ["clients", "/groups/" + group.id + "/clients", ".client-list"],
+    ["products", "/groups/" + group.id + "/inventory", ".product-grid"],
+    ["users", "/groups/" + group.id + "/team", ".record-table tbody"],
+    ["groups", "/groups", ".record-table tbody"],
+    ["activity", "/activity", ".record-table tbody"],
+    ["requests", "/groups/" + group.id + "/requests", ".request-list"],
+    ["purchase", "/purchases/" + pendingId, ".record-table tbody"],
+  ];
+  for (const width of [320, 390, 600, 820, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const [name, path, selector] of gridRoutes) {
+      await page.goto(base + path);
+      await page.locator(selector).waitFor();
+      const layout = await page.evaluate(() => {
+        const horizontal = [...document.querySelectorAll("main *")]
+          .filter((el) => {
+            const s = getComputedStyle(el),
+              r = el.getBoundingClientRect();
+            return (
+              r.width > 0 &&
+              r.right > 0 &&
+              r.left < innerWidth &&
+              ["auto", "scroll"].includes(s.overflowX) &&
+              el.scrollWidth > el.clientWidth + 2
+            );
+          })
+          .map((el) => el.className);
+        return {
+          width: innerWidth,
+          content: document.documentElement.scrollWidth,
+          horizontal,
+        };
+      });
+      assert(
+        layout.content <= width + 1,
+        `${name} desborda a ${width}: ${JSON.stringify(layout)}`,
+      );
+      assert.deepEqual(
+        layout.horizontal,
+        [],
+        `${name} requiere desplazarse horizontalmente a ${width}`,
+      );
+      const columns = await page
+        .locator(selector)
+        .evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        );
+      if (
+        ["clients", "products", "users", "groups"].includes(name) &&
+        width >= 360
+      )
+        assert(columns >= 2, `${name} no usa cuadrícula a ${width}`);
+      gridResults.push({ name, width, columns, ...layout });
+      if (
+        [390, 1440].includes(width) &&
+        ["clients", "products", "users"].includes(name)
+      )
+        await page.screenshot({
+          path: `.local/screenshots/grid-${name}-${width}.png`,
+          fullPage: true,
+          animations: "disabled",
+        });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(base + "/");
+  await page
+    .getByRole("heading", { name: "Centro de administración", exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "Abrir menú", exact: true }).click();
+  assert.equal(
+    await page
+      .locator(".sidebar nav")
+      .evaluate(
+        (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+      ),
+    2,
+  );
+  await page.screenshot({
+    path: ".local/screenshots/grid-menu-mobile.png",
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page
+    .getByRole("button", { name: "Cerrar navegación", exact: true })
+    .click();
+  await signOut();
+  await signIn("browser_owner_" + suffix);
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const path of ["/calendar", "/reports", "/clients/" + p.client_id]) {
+      await page.goto(base + path);
+      await page
+        .locator(
+          path.includes("/clients/") ? ".purchase-grid" : ".record-table tbody",
+        )
+        .waitFor();
+      const layout = await page.evaluate(() => ({
+        content: document.documentElement.scrollWidth,
+        horizontal: [...document.querySelectorAll("main *")]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return (
+              r.width > 0 &&
+              ["auto", "scroll"].includes(getComputedStyle(el).overflowX) &&
+              el.scrollWidth > el.clientWidth + 2
+            );
+          })
+          .map((el) => el.className),
+      }));
+      assert(
+        layout.content <= width + 1,
+        `Vista del dueño ${path} desborda a ${width}`,
+      );
+      assert.deepEqual(
+        layout.horizontal,
+        [],
+        `Vista del dueño ${path} requiere desplazarse lateralmente`,
+      );
+      gridResults.push({ name: "owner" + path, width, ...layout });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(base + "/inventory");
+  await page
+    .getByRole("button", { name: "Editar Licuadora Oster", exact: true })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  assert.equal(
+    await page.getByLabel("Nombre", { exact: true }).inputValue(),
+    "Licuadora Oster",
+  );
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  await signOut();
+  await signIn(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
+  await writeFile(
+    ".local/grid-layout-result.json",
+    JSON.stringify(gridResults, null, 2),
+  );
   if (process.env.VERIFY_REDEPLOY === "1") {
     assert(
       process.env.TEST_BASE_URL,
@@ -504,7 +666,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    "Navegador: grupo, cupos, usuarios, inventario, cliente, reserva, aprobación, capital, parcial, chat, archivo, audio, soporte, panel de administrador, notas, revisión de grupo, paleta, modos, recarga y 3 tamaños: OK",
+    "Navegador: grupo, cupos, usuarios, inventario, cliente, reserva, aprobación, capital, parcial, chat, archivo, audio, soporte, panel de administrador, notas, revisión de grupo, paleta, modos, recarga y cuadrículas de 320 a 1440 px: OK",
   );
   await writeFile(
     ".local/browser-result.json",

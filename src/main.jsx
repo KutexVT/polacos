@@ -255,6 +255,13 @@ function App() {
         }
       >
         <aside className={"sidebar " + (menu ? "open" : "")}>
+          <button
+            className="icon-button drawer-close"
+            aria-label="Cerrar navegación"
+            onClick={() => setMenu(false)}
+          >
+            <X size={21} />
+          </button>
           <a
             href="/"
             onClick={(e) => {

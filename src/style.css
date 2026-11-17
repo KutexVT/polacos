@@ -809,13 +809,6 @@ main {
   color: var(--muted);
   font-size: 12px;
 }
-.table-wrap {
-  width: 100%;
-  overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-}
 table {
   border-collapse: collapse;
   width: 100%;
@@ -842,12 +835,6 @@ td small {
 }
 .numeric {
   white-space: nowrap;
-}
-.table-product {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 170px;
 }
 .row-actions {
   display: flex;
@@ -1943,10 +1930,6 @@ dialog::backdrop {
   .login-form {
     padding: 38px 28px;
   }
-  .table-wrap td,
-  .table-wrap th {
-    padding: 14px;
-  }
   .profile-strip {
     flex-wrap: wrap;
   }
@@ -2196,11 +2179,6 @@ dialog::backdrop {
     gap: 12px;
   }
   .profile-strip .button {
-    font-size: 11px;
-  }
-  .table-wrap td,
-  .table-wrap th {
-    padding: 13px 12px;
     font-size: 11px;
   }
   dialog {
@@ -2819,5 +2797,553 @@ dialog::backdrop {
   }
   .review-tabs {
     margin-top: 18px;
+  }
+}
+/* Records reflow into grids instead of horizontal scrolling surfaces. */
+.client-list,
+.product-grid,
+.purchase-grid,
+.request-list,
+.notification-list,
+.payment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.client-row,
+.purchase-row,
+.request-row,
+.notification-row,
+.payment-row {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.client-row:last-child {
+  border: 1px solid var(--border);
+}
+.client-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-content: start;
+  gap: 14px;
+}
+.client-row > .avatar {
+  width: 44px;
+  height: 44px;
+}
+.client-identity {
+  min-width: 0;
+}
+.client-identity strong {
+  font-size: 15px;
+  line-height: 1.45;
+}
+.client-identity span {
+  max-width: none;
+  white-space: normal;
+  overflow: visible;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.client-balance {
+  grid-column: 1/-1;
+  text-align: left;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  align-self: end;
+}
+.client-balance small {
+  font-size: 11px;
+}
+.client-balance strong {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.client-row > svg {
+  display: none;
+}
+.product-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+.product-card > .avatar {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16/10;
+  border-radius: 0;
+  object-fit: cover;
+  background: var(--subtle);
+  font-size: 30px;
+  color: var(--muted);
+}
+.product-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 16px;
+  min-width: 0;
+}
+.product-card h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.product-card p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.product-price {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+}
+.product-price strong {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.product-stock {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.product-stock dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+.product-stock dd {
+  margin: 5px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.product-actions .button {
+  margin-right: auto;
+}
+.product-actions .icon-button {
+  width: 44px;
+  height: 44px;
+}
+.purchase-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-content: start;
+  gap: 12px;
+}
+.purchase-row > div {
+  min-width: 0;
+}
+.purchase-row .badge {
+  justify-self: start;
+  white-space: normal;
+}
+.purchase-row > strong,
+.purchase-row > .badge {
+  grid-column: 1/-1;
+  text-align: left;
+}
+.request-title {
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.request-row {
+  display: flex;
+  flex-direction: column;
+}
+.request-row .button-row {
+  margin-top: auto;
+  padding-top: 16px;
+  flex-wrap: wrap;
+}
+.request-row .price-comparison {
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.notification-row {
+  height: 100%;
+  align-items: flex-start;
+}
+.notification-row > div {
+  min-width: 0;
+}
+.notification-row > svg:last-child {
+  display: none;
+}
+.payment-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.payment-row > div {
+  min-width: 0;
+}
+.records-wrap {
+  width: 100%;
+  min-width: 0;
+}
+.record-table {
+  display: block;
+}
+.record-table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.record-table tbody {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.record-table tr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 16px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+.record-table td {
+  display: block;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.record-table td::before {
+  content: attr(data-label);
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+.record-table td:first-child {
+  grid-column: 1/-1;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 600;
+}
+.record-table td:first-child::before,
+.record-table td[data-label="Acciones"]::before {
+  display: none;
+}
+.record-table td[data-label="Acciones"] {
+  grid-column: 1/-1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  align-items: center;
+}
+.record-table td small {
+  max-width: none;
+  overflow-wrap: anywhere;
+}
+.record-table .row-actions {
+  flex-wrap: wrap;
+}
+.record-table td > .button {
+  max-width: 100%;
+  white-space: normal;
+}
+.toolbar {
+  flex-wrap: wrap;
+}
+.toolbar > * {
+  min-width: 0;
+}
+.toolbar .search {
+  flex: 1 1 220px;
+}
+.review-tabs {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  display: grid;
+  overflow: visible;
+}
+.review-tabs button {
+  white-space: normal;
+  min-height: 44px;
+}
+.drawer-close {
+  display: none;
+}
+@media (max-width: 850px) {
+  .sidebar {
+    width: min(420px, calc(100vw - 24px));
+    height: 100dvh;
+    overflow-y: auto;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  .drawer-close {
+    display: flex;
+    position: absolute;
+    right: 12px;
+    top: 14px;
+    width: 44px;
+    height: 44px;
+  }
+  .sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .sidebar nav > a {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    min-height: 88px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 0;
+    position: relative;
+  }
+  .sidebar nav > a > span {
+    flex: none;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  .sidebar nav .nav-count {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+  }
+  .sidebar-foot {
+    margin-top: 24px;
+  }
+  .bottom-nav button {
+    min-height: 48px;
+  }
+}
+@media (max-width: 600px) {
+  .client-list,
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .client-row {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+    gap: 10px;
+  }
+  .client-row > .avatar {
+    width: 40px;
+    height: 40px;
+  }
+  .client-identity strong {
+    font-size: 14px;
+  }
+  .client-identity span {
+    font-size: 12px;
+    max-width: none;
+    overflow: visible;
+  }
+  .client-balance {
+    padding-top: 10px;
+  }
+  .client-balance strong {
+    font-size: 16px;
+  }
+  .client-balance small {
+    font-size: 11px;
+  }
+  .product-card-body {
+    padding: 14px;
+    gap: 12px;
+  }
+  .product-card h2 {
+    font-size: 14px;
+  }
+  .product-card > .avatar {
+    aspect-ratio: 4/3;
+    font-size: 24px;
+  }
+  .product-price strong {
+    font-size: 16px;
+  }
+  .product-stock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 6px;
+    padding-top: 12px;
+  }
+  .product-stock dt {
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+  .product-stock dd {
+    font-size: 16px;
+  }
+  .product-actions .button {
+    flex: 1 0 100%;
+    justify-content: center;
+    margin: 0;
+  }
+  .product-actions {
+    justify-content: space-between;
+  }
+  .records-wrap .record-table tr {
+    padding: 18px;
+  }
+  .record-table tbody,
+  .request-list,
+  .purchase-grid,
+  .notification-list,
+  .payment-list {
+    grid-template-columns: 1fr;
+  }
+  .record-table td {
+    font-size: 14px;
+  }
+  .record-table td::before {
+    font-size: 12px;
+  }
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .toolbar > .search,
+  .toolbar > .muted,
+  .toolbar > .segmented {
+    grid-column: 1/-1;
+  }
+  .toolbar .field,
+  .toolbar > input,
+  .toolbar > select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .toolbar select,
+  .toolbar input,
+  .field input,
+  .field select,
+  .field textarea,
+  .search input {
+    font-size: 16px;
+  }
+  .segmented {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    gap: 4px;
+  }
+  .segmented button {
+    white-space: normal;
+    min-height: 44px;
+    padding: 8px;
+    min-width: 0;
+  }
+  .review-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .row-actions {
+    flex-wrap: wrap;
+  }
+  .button {
+    min-height: 44px;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .page-heading > div,
+  .heading-actions,
+  .profile-strip > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .profile-strip > div {
+    min-width: 0;
+    flex: 1 1 180px;
+  }
+  .profile-strip p {
+    overflow-wrap: anywhere;
+  }
+  .custom-date {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page-footer {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 359px) {
+  .client-list,
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.purchase-row > .row-money {
+  grid-column: 1/-1;
+  text-align: left;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+@media (min-width: 360px) and (max-width: 600px) {
+  .compact-records .record-table tbody {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .compact-records .record-table tr {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+    gap: 12px;
+  }
+  .compact-records td[data-label="Acciones"] > .button,
+  .compact-records .row-actions,
+  .compact-records .row-actions > .button {
+    width: 100%;
   }
 }

@@ -51,6 +51,55 @@ export function State({ loading, error, children }) {
     );
   return children;
 }
+// Keep column labels and native table semantics when records reflow into cards.
+export function RecordTable({ children }) {
+  const tableId = useRef("records-" + crypto.randomUUID()).current;
+  const sections = React.Children.toArray(children);
+  const head = sections.find((section) => section.type === "thead");
+  const columns = React.Children.toArray(head.props.children.props.children);
+  return (
+    <table className="record-table" role="table">
+      {sections.map((section) => {
+        if (section.type === "thead") {
+          const headers = columns.map((column, index) =>
+            React.cloneElement(
+              column,
+              {
+                id: tableId + "-" + index,
+                scope: "col",
+                role: "columnheader",
+                key: index,
+              },
+              column.props.children || "Acciones",
+            ),
+          );
+          return React.cloneElement(
+            section,
+            { role: "rowgroup" },
+            React.cloneElement(
+              section.props.children,
+              { role: "row" },
+              headers,
+            ),
+          );
+        }
+        const rows = React.Children.map(section.props.children, (row) => {
+          if (!row) return null;
+          const cells = React.Children.toArray(row.props.children).map(
+            (cell, index) =>
+              React.cloneElement(cell, {
+                role: "cell",
+                headers: tableId + "-" + index,
+                "data-label": columns[index].props.children || "Acciones",
+              }),
+          );
+          return React.cloneElement(row, { role: "row" }, cells);
+        });
+        return React.cloneElement(section, { role: "rowgroup" }, rows);
+      })}
+    </table>
+  );
+}
 export function Empty({ icon: Icon = CalendarDays, title, children, action }) {
   return (
     <div className="empty">

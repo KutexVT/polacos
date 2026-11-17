@@ -36,6 +36,7 @@ import {
   SearchBox,
   FileField,
   useData,
+  RecordTable,
 } from "./ui";
 export function Dashboard() {
   const a = useApp(),
@@ -325,8 +326,8 @@ export function Calendar() {
       </div>
       <State {...state}>
         {rows.length ? (
-          <div className="table-wrap">
-            <table>
+          <div className="records-wrap">
+            <RecordTable>
               <thead>
                 <tr>
                   <th>Vencimiento</th>
@@ -369,7 +370,7 @@ export function Calendar() {
                     </tr>
                   ))}
               </tbody>
-            </table>
+            </RecordTable>
           </div>
         ) : (
           <Empty title="Sin cobros en esta vista">
@@ -500,8 +501,8 @@ export function Reports() {
 }
 function Comparison({ rows }) {
   return (
-    <div className="table-wrap">
-      <table>
+    <div className="records-wrap">
+      <RecordTable>
         <thead>
           <tr>
             <th>Nombre</th>
@@ -522,7 +523,7 @@ function Comparison({ rows }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </RecordTable>
     </div>
   );
 }
@@ -557,8 +558,8 @@ export function Groups() {
       </div>
       <State {...state}>
         {state.data?.items.length ? (
-          <div className="table-wrap">
-            <table>
+          <div className="records-wrap compact-records">
+            <RecordTable>
               <thead>
                 <tr>
                   <th>Grupo</th>
@@ -600,7 +601,7 @@ export function Groups() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </RecordTable>
           </div>
         ) : (
           <Empty icon={Building2} title="Crea tu primer grupo">
@@ -717,8 +718,8 @@ export function Team() {
         )}
       </div>
       <State {...state}>
-        <div className="table-wrap">
-          <table>
+        <div className="records-wrap compact-records">
+          <RecordTable>
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -778,7 +779,7 @@ export function Team() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </RecordTable>
         </div>
         <Pager data={state.data} page={page} setPage={setPage} />
       </State>
@@ -913,8 +914,8 @@ export function Trash() {
       {error && <div className="error">{error}</div>}
       <State {...state}>
         {state.data?.items.length ? (
-          <div className="table-wrap">
-            <table>
+          <div className="records-wrap">
+            <RecordTable>
               <thead>
                 <tr>
                   <th>Registro</th>
@@ -966,7 +967,7 @@ export function Trash() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </RecordTable>
           </div>
         ) : (
           <Empty icon={Archive} title="La papelera está vacía">

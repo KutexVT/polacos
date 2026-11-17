@@ -26,6 +26,7 @@ import {
   Pager,
   SearchBox,
   useData,
+  RecordTable,
 } from "./ui";
 export const supportLabels = {
   open: "Pendiente",
@@ -270,8 +271,8 @@ export function AdminActivity() {
       </p>
       <State {...state}>
         {state.data?.items.length ? (
-          <div className="table-wrap">
-            <table>
+          <div className="records-wrap">
+            <RecordTable>
               <thead>
                 <tr>
                   <th>Acción</th>
@@ -317,7 +318,7 @@ export function AdminActivity() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </RecordTable>
           </div>
         ) : (
           <Empty icon={Activity} title="Sin cambios en esta búsqueda">
