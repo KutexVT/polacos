@@ -1781,7 +1781,7 @@ dialog::backdrop {
     display: block;
     position: fixed;
     inset: 0;
-    background: #173d3060;
+    background: #00000060;
     z-index: 19;
   }
   .topbar {
