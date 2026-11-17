@@ -148,10 +148,7 @@ export async function cancelPending(db, u, p) {
 }
 export function routes(app) {
   app.get("/api/me", async (req, res) => {
-    const g = req.user.group_id
-      ? await one(pool, "SELECT * FROM groups WHERE id=$1", [req.user.group_id])
-      : null;
-    res.json({ user: publicUser(req.user), group: g, today: today() });
+    res.json({ user: publicUser(req.user), today: today() });
   });
   write(
     app,
@@ -191,7 +188,7 @@ export function routes(app) {
       list(
         (
           await pool.query(
-            "SELECT g.*,count(u.id)::int AS used_slots FROM groups g LEFT JOIN users u ON u.group_id=g.id AND u.role='polaco' AND u.deleted_at IS NULL GROUP BY g.id ORDER BY g.created_at DESC",
+            "SELECT g.id,g.name,g.polaco_limit,g.created_at,count(u.id)::int AS used_slots FROM groups g LEFT JOIN users u ON u.group_id=g.id AND u.role='polaco' AND u.deleted_at IS NULL GROUP BY g.id ORDER BY g.created_at DESC",
           )
         ).rows,
         req,
@@ -213,7 +210,7 @@ export function routes(app) {
       check(u.role === "admin", "Solo para el administrador", 403);
       const g = await one(
         db,
-        "INSERT INTO groups(name,polaco_limit) VALUES($1,$2) RETURNING *",
+        "INSERT INTO groups(name,polaco_limit) VALUES($1,$2) RETURNING id,name,polaco_limit,created_at",
         [b.name, b.limit],
       );
       await db.query(
@@ -231,29 +228,24 @@ export function routes(app) {
     app,
     "patch",
     "/api/groups/:id",
-    z.object({
+    z.strictObject({
       name: name.optional(),
       limit: z.coerce.number().int().min(0).max(10000).optional(),
-      logo_id: uuid.nullable().optional(),
     }),
     async (db, u, b, req) => {
+      check(
+        u.role === "admin",
+        "Solo el administrador organiza los grupos",
+        403,
+      );
       const g = await one(db, "SELECT * FROM groups WHERE id=$1", [
         req.params.id,
       ]);
       check(g, "Grupo no disponible", 404);
-      manager(u, g.id);
-      if (b.limit !== undefined)
-        check(u.role === "admin", "Solo el administrador modifica cupos", 403);
-      if (b.logo_id !== g.logo_id) await ownFile(db, u, b.logo_id);
       const next = await one(
         db,
-        "UPDATE groups SET name=$2,polaco_limit=$3,logo_id=$4 WHERE id=$1 RETURNING *",
-        [
-          g.id,
-          b.name ?? g.name,
-          b.limit ?? g.polaco_limit,
-          b.logo_id === undefined ? g.logo_id : b.logo_id,
-        ],
+        "UPDATE groups SET name=$2,polaco_limit=$3 WHERE id=$1 RETURNING id,name,polaco_limit,created_at",
+        [g.id, b.name ?? g.name, b.limit ?? g.polaco_limit],
       );
       await audit(db, u, "group", g.id, "Actualizar grupo", g, next);
       return next;
@@ -263,7 +255,7 @@ export function routes(app) {
     res.json(
       (
         await pool.query(
-          "SELECT u.id,u.name,u.username,u.role,u.group_id,g.name AS group_name FROM users u LEFT JOIN groups g ON g.id=u.group_id WHERE u.deleted_at IS NULL AND ($1::uuid IS NULL OR u.group_id=$1) ORDER BY u.name",
+          `SELECT u.id,u.name,u.username,u.role,u.group_id${req.user.role === "admin" ? ",g.name AS group_name" : ""} FROM users u LEFT JOIN groups g ON g.id=u.group_id WHERE u.deleted_at IS NULL AND ($1::uuid IS NULL OR u.group_id=$1) ORDER BY u.name`,
           [
             req.user.role === "admin"
               ? req.query.group_id || null
@@ -281,7 +273,7 @@ export function routes(app) {
         : req.user.group_id;
     const rows = (
       await pool.query(
-        "SELECT u.id,u.name,u.username,u.role,u.group_id,u.created_at,g.name AS group_name FROM users u LEFT JOIN groups g ON g.id=u.group_id WHERE u.deleted_at IS NULL AND ($1::uuid IS NULL OR u.group_id=$1) ORDER BY u.created_at",
+        `SELECT u.id,u.name,u.username,u.role,u.group_id,u.created_at${req.user.role === "admin" ? ",g.name AS group_name" : ""} FROM users u LEFT JOIN groups g ON g.id=u.group_id WHERE u.deleted_at IS NULL AND ($1::uuid IS NULL OR u.group_id=$1) ORDER BY u.created_at`,
         [gid],
       )
     ).rows;

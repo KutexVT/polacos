@@ -45,7 +45,7 @@ export function adminRoutes(app) {
   app.get("/api/admin/groups/:id", async (req, res) => {
     const g = await one(
       pool,
-      `SELECT g.*,(SELECT count(*)::int FROM users WHERE group_id=g.id AND deleted_at IS NULL) AS users,(SELECT count(*)::int FROM clients WHERE group_id=g.id AND deleted_at IS NULL) AS clients,(SELECT count(*)::int FROM products WHERE group_id=g.id AND deleted_at IS NULL) AS products,(SELECT count(*)::int FROM conversations WHERE group_id=g.id AND kind='support' AND support_status<>'resolved') AS open_support FROM groups g WHERE id=$1`,
+      `SELECT g.id,g.name,g.polaco_limit,g.created_at,(SELECT count(*)::int FROM users WHERE group_id=g.id AND deleted_at IS NULL) AS users,(SELECT count(*)::int FROM clients WHERE group_id=g.id AND deleted_at IS NULL) AS clients,(SELECT count(*)::int FROM products WHERE group_id=g.id AND deleted_at IS NULL) AS products,(SELECT count(*)::int FROM conversations WHERE group_id=g.id AND kind='support' AND support_status<>'resolved') AS open_support FROM groups g WHERE id=$1`,
       [req.params.id],
     );
     check(g, "Grupo no disponible", 404);

@@ -42,7 +42,7 @@ La comprobación de persistencia se ejecutó sobre la versión previa al ajuste 
 | 15. Chat y adjuntos persistentes | Navegador: texto, PNG, audio grabado y TXT; recarga; redespliegue; comparación exacta de bytes |
 | 16. Soporte | API 08 y navegador: trabajador inicia, admin responde, grupo de origen visible y contacto espontáneo a polaco rechazado |
 | 17. Transferencia y papelera | API 10–12: pagos/stock conservados, foto transferida protegida, purga a 31 días con reloj controlado y repetición sin dobles efectos |
-| 18. Logo y paleta | API 09 y navegador: preferencias independientes, acceso autorizado al logo y paleta persistente al recargar |
+| 18. Paleta y organización interna | API 09 y navegador: preferencias independientes, nombres exclusivos del administrador, logos retirados y paleta persistente al recargar |
 | 19. Flujos públicos Railway | Suite API completa y navegador contra HTTPS publicado |
 
 Se añadió API 13 para comprobar que un cobro por su propia fecha sigue incluido aunque la compra sea anterior al período o esté cancelada. Anular el pago lo descuenta del reporte.
@@ -92,3 +92,10 @@ El navegador añade registros temporales con nombres y descripciones largos dent
 La evidencia corresponde a Chromium de escritorio con tamaños de pantalla simulados. No se realizó prueba en un teléfono físico ni con Safari/iOS.
 
 Publicación de las cuadrículas: Railway `8d33572a-313c-4afe-90c1-1b19b3d94ad3` terminó en `SUCCESS`. La salud de PostgreSQL y los assets públicos coinciden con la compilación local. La matriz final pasó 44 comprobaciones sin contenedores que requieran desplazamiento lateral. En la URL pública se revisaron los 20 productos y los 20 clientes de la primera página del grupo de pruebas: ambos mostraron dos columnas a 390 px, documento de 382 px de ancho y ningún contenedor horizontal en productos. Se verificó también la cuadrícula de clientes a 1440 px. Evidencia privada: `.local/grid-production-result.json`, `.local/grid-public-products-mobile.png` y `.local/grid-public-clients-desktop.png`.
+
+
+## Identidad de grupo exclusiva de administración
+
+API 09 comprueba que dueños y polacos no reciben identidad del grupo en la sesión ni nombres de grupo en directorio, conversaciones, usuarios o reportes. No pueden listar ni renombrar grupos. El administrador conserva nombres y cupos; los campos de logo se rechazan y los logos históricos no se sirven a ningún rol. No se modifica la separación de datos ni el contenido de registros o mensajes existentes.
+
+Las 20 pruebas de servidor pasaron. El recorrido de navegador verifica que el menú de dueño y trabajador carece de identidad de grupo y que Configuración no contiene nombre ni imagen de grupo. Continúan funcionando colores, modos, catálogo, compras, pagos, administración y las 44 comprobaciones de distribución adaptable. Evidencia local: `.local/internal-groups-api.log`, `.local/internal-groups-browser.log`, `.local/screenshots/owner-menu-no-group.png` y `.local/screenshots/owner-settings-no-group.png`.

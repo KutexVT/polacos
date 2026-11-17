@@ -36,7 +36,7 @@ Dueño:
 - Tiene un resumen por trabajador y un resumen de todo el grupo sin iniciar sesión como ellos
 - Aprueba o rechaza solicitudes de cambios de precio
 - Gestiona transferencias de clientes y la papelera del grupo
-- Configura el nombre y logo o imagen del grupo
+- No ve ni configura la identidad del grupo. Su organización interna corresponde al administrador
 
 Polaco:
 - Administra sus clientes, compras, calendarios y cobros
@@ -255,7 +255,7 @@ Papelera:
 
 12. PERSONALIZACIÓN E INTERFAZ
 
-- El dueño define nombre y logo o imagen del grupo. Se aplica en las cuentas de todos sus polacos
+- Solo el administrador guarda y modifica los nombres de grupos como etiquetas internas de organización. No se muestran a dueños ni polacos. No existe personalización con foto o logo de grupo
 - Cada usuario elige su paleta de colores sin cambiar la de sus compañeros
 - Ofrecer personalización en el primer uso y después en Configuración
 - Guardar preferencias por usuario y recuperarlas al iniciar sesión en otro dispositivo

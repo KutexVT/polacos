@@ -102,7 +102,7 @@ export function reportRoutes(app) {
     ).rows;
     const groupRows = (
       await pool.query(
-        "SELECT id,name,polaco_limit FROM groups WHERE $1::uuid IS NULL OR id=$1",
+        `SELECT id,polaco_limit${u.role === "admin" ? ",name" : ""} FROM groups WHERE $1::uuid IS NULL OR id=$1`,
         [gid],
       )
     ).rows;

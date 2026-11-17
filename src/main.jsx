@@ -275,18 +275,6 @@ function App() {
               polacos<span className="brand-dot">.</span>
             </span>
           </a>
-          <div className="group-brand">
-            <Photo
-              id={session.group?.logo_id}
-              name={session.group?.name || "Plataforma"}
-            />
-            <div>
-              <strong>{session.group?.name || "Administración"}</strong>
-              <small>
-                {admin ? "Toda la plataforma" : "Mi grupo de trabajo"}
-              </small>
-            </div>
-          </div>
           <nav aria-label="Navegación principal">
             {nav.map(([path, label, Icon]) => (
               <a
@@ -490,7 +478,7 @@ function Login({ onLogin }) {
             <br />
             Las cuentas claras.
             <br />
-            Todo tu grupo conectado.
+            Todo tu equipo conectado.
           </p>
           <div className="login-rule" />
           <span>Hecho para vender y cobrar en Costa Rica</span>
@@ -525,7 +513,7 @@ function Login({ onLogin }) {
           />
         </Form>
         <p className="login-help">
-          Si necesitas recuperar tu acceso habla con el dueño de tu grupo
+          Si necesitas recuperar tu acceso habla con el responsable de tu cuenta
         </p>
       </section>
     </div>

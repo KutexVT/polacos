@@ -572,7 +572,7 @@ export function Inventory() {
         description={
           a.admin
             ? "Consulta las existencias y corrige los registros de este grupo"
-            : "El catálogo que comparte tu grupo"
+            : "El catálogo de productos"
         }
       >
         {a.manager && !a.admin && (
@@ -661,7 +661,7 @@ export function Inventory() {
           <Empty icon={Package} title="Tu catálogo empieza aquí">
             {a.manager
               ? "Añade un producto con su precio y existencias"
-              : "El dueño de tu grupo añadirá los productos disponibles"}
+              : "El responsable añadirá los productos disponibles"}
           </Empty>
         )}
         <Pager data={state.data} page={page} setPage={setPage} />

@@ -114,6 +114,56 @@ try {
   groups.push(group.id);
   await signOut();
   await signIn("browser_owner_" + suffix);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Abrir menú", exact: true }).click();
+  assert.equal(await page.locator(".group-brand").count(), 0);
+  assert.equal(
+    await page
+      .getByRole("navigation", { name: "Navegación principal" })
+      .getByText("QA Navegador " + suffix, { exact: true })
+      .count(),
+    0,
+  );
+  await page.waitForFunction(() => {
+    const menu = document.querySelector(".sidebar.open");
+    return menu && Math.abs(menu.getBoundingClientRect().left) < 1;
+  });
+  await page.screenshot({
+    path: ".local/screenshots/owner-menu-no-group.png",
+    fullPage: false,
+    animations: "disabled",
+  });
+  await page
+    .getByRole("button", { name: "Cerrar navegación", exact: true })
+    .click();
+  await page.goto(base + "/settings");
+  await page
+    .getByRole("heading", { name: "Colores de tu cuenta", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("heading", { name: "Identidad de tu grupo", exact: true })
+      .count(),
+    0,
+  );
+  assert.equal(
+    await page.getByLabel("Nombre del grupo", { exact: true }).count(),
+    0,
+  );
+  assert.equal(
+    await page.getByLabel("Logo o imagen del grupo", { exact: true }).count(),
+    0,
+  );
+  assert(
+    !(await page.locator("main").innerText()).includes(
+      "QA Navegador " + suffix,
+    ),
+  );
+  await page.screenshot({
+    path: ".local/screenshots/owner-settings-no-group.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(base + "/team");
   await page.getByRole("button", { name: "Nuevo polaco", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Carlos Solano");
@@ -174,6 +224,12 @@ try {
   }
   await signOut();
   await signIn("browser_worker_" + suffix);
+  assert.equal(await page.locator(".group-brand").count(), 0);
+  assert(
+    !(await page.locator(".sidebar").innerText()).includes(
+      "QA Navegador " + suffix,
+    ),
+  );
   await page.goto(base + "/clients");
   await page.getByRole("button", { name: /Andrea Jiménez/ }).click();
   await page.getByRole("button", { name: "Nueva compra", exact: true }).click();

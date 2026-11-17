@@ -9,7 +9,7 @@ Código: `/home/kutex/project/polacos`. Las credenciales iniciales de esta insta
 ## Uso inicial
 
 1. Entrar con el administrador y elegir una paleta. Desde **Grupos** crear el grupo, su dueño y los cupos autorizados.
-2. El dueño crea sus polacos en **Equipo** y productos en **Inventario**. Puede cambiar el nombre y logo del grupo en **Configuración**.
+2. El dueño crea sus polacos en **Usuarios** y productos en **Inventario**. Los nombres de los grupos son etiquetas internas del administrador. Dueños y polacos no ven esa identidad ni pueden configurarla.
 3. Crear un cliente y su compra. Revisar el calendario antes de confirmar. Un precio propuesto por un polaco reserva unidades hasta que el dueño decida.
 4. En **Cobros** abrir una compra y registrar pagos de cuota o abonos al capital. El historial conserva correcciones y anulaciones.
 5. **Solicitudes** permite resolver precios y compartir registros con caducidad. **Conversaciones** incluye chat privado, grupos y Soporte.

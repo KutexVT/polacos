@@ -186,7 +186,7 @@ export function collaborationRoutes(app) {
   app.get("/api/conversations", async (req, res) => {
     const rows = (
       await pool.query(
-        `SELECT c.*,u.name AS creator_name,u.role AS creator_role,g.name AS group_name,(SELECT count(*)::int FROM messages m WHERE m.conversation_id=c.id) AS message_count,(SELECT count(*)::int FROM messages m JOIN conversation_members cm ON cm.conversation_id=m.conversation_id AND cm.user_id=$1 WHERE m.conversation_id=c.id AND m.created_at>cm.read_at AND m.sender_id<>$1) AS unread,(SELECT max(created_at) FROM messages WHERE conversation_id=c.id) AS last_message_at FROM conversations c LEFT JOIN users u ON u.id=c.created_by LEFT JOIN groups g ON g.id=c.group_id WHERE ($2::boolean OR EXISTS(SELECT 1 FROM conversation_members cm WHERE cm.conversation_id=c.id AND cm.user_id=$1)) AND ($3::uuid IS NULL OR c.group_id=$3) ORDER BY last_message_at DESC NULLS LAST`,
+        `SELECT c.*,u.name AS creator_name,u.role AS creator_role${req.user.role === "admin" ? ",g.name AS group_name" : ""},(SELECT count(*)::int FROM messages m WHERE m.conversation_id=c.id) AS message_count,(SELECT count(*)::int FROM messages m JOIN conversation_members cm ON cm.conversation_id=m.conversation_id AND cm.user_id=$1 WHERE m.conversation_id=c.id AND m.created_at>cm.read_at AND m.sender_id<>$1) AS unread,(SELECT max(created_at) FROM messages WHERE conversation_id=c.id) AS last_message_at FROM conversations c LEFT JOIN users u ON u.id=c.created_by LEFT JOIN groups g ON g.id=c.group_id WHERE ($2::boolean OR EXISTS(SELECT 1 FROM conversation_members cm WHERE cm.conversation_id=c.id AND cm.user_id=$1)) AND ($3::uuid IS NULL OR c.group_id=$3) ORDER BY last_message_at DESC NULLS LAST`,
         [
           req.user.id,
           req.user.role === "admin",
@@ -417,15 +417,17 @@ export function collaborationRoutes(app) {
     res.json(saved);
   });
   app.get("/api/files/:id", async (req, res) => {
-    const f = await one(pool, "SELECT * FROM files WHERE id=$1", [
-      req.params.id,
-    ]);
+    const f = await one(
+      pool,
+      "SELECT f.* FROM files f WHERE f.id=$1 AND NOT EXISTS(SELECT 1 FROM groups g WHERE g.logo_id=f.id)",
+      [req.params.id],
+    );
     check(f, "Archivo no disponible", 404);
     let access = req.user.role === "admin";
     if (!access) {
       access = !!(await one(
         pool,
-        "SELECT 1 FROM groups WHERE id=$2 AND logo_id=$1 UNION SELECT 1 FROM products WHERE image_id=$1 AND group_id=$2 AND deleted_at IS NULL",
+        "SELECT 1 FROM products WHERE image_id=$1 AND group_id=$2 AND deleted_at IS NULL",
         [f.id, req.user.group_id],
       ));
       if (!access) {

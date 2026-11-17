@@ -23,7 +23,7 @@ La especificación completa está en `REQUISITOS.md`. Estas decisiones completan
 ## Permisos y retirada
 
 - El límite cuenta perfiles de polacos activos. Retirados no ocupan cupo; dueños y clientes tampoco. Se puede reducir el límite por debajo del uso actual: se impiden nuevas altas/restauraciones hasta estar por debajo del nuevo límite, sin borrar usuarios existentes.
-- Las sesiones duran 7 días. Restablecer contraseña o retirar usuario invalida sesiones. Las preferencias son del usuario y el logo pertenece al grupo.
+- Las sesiones duran 7 días. Restablecer contraseña o retirar usuario invalida sesiones. Las preferencias son del usuario. Los nombres de grupos son etiquetas internas exclusivas del administrador. La identidad visual del grupo se retiró: no se pueden configurar logos y los archivos de logos antiguos no se entregan. La columna histórica se conserva sin exposición para evitar una migración destructiva.
 - Los permisos temporales pueden solicitarse por un máximo de 720 horas. El destinatario decide los registros y la caducidad. La caducidad se comprueba en la base en cada operación; un aviso en pantalla no constituye autorización.
 - Transferir un cliente revoca conservadoramente todos los permisos pendientes/aprobados que concedió su responsable anterior. Tendrá que volver a compartir los otros clientes si lo necesita. No se mantiene acceso por haber subido una foto: manda el permiso sobre el registro actual.
 - Al retirar con transferencia se conservan los clientes, compras, pagos, planes y fotos; las propuestas pendientes pasan al nuevo responsable. Si se envían los clientes a papelera se liberan sus reservas.

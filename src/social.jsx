@@ -530,7 +530,7 @@ export function Chats({ id, supportOnly = false }) {
             ? "Solicitudes de ayuda de dueños y polacos"
             : a.admin
               ? "Consulta el historial del grupo"
-              : "Tu grupo conectado. Soporte cuando lo necesitas"
+              : "Tu equipo conectado. Soporte cuando lo necesitas"
         }
       >
         {!a.admin && (

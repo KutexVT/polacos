@@ -34,7 +34,6 @@ import {
   Badge,
   Pager,
   SearchBox,
-  FileField,
   useData,
   RecordTable,
 } from "./ui";
@@ -150,7 +149,7 @@ export function Dashboard() {
                 <section className="stock-summary">
                   <Package size={27} />
                   <h2>Todo bajo control</h2>
-                  <p>Existencias del catálogo del grupo</p>
+                  <p>Existencias del catálogo</p>
                   <dl>
                     <div>
                       <dt>Disponibles</dt>
@@ -303,7 +302,7 @@ export function Calendar() {
             value={owner}
             onChange={(e) => setOwner(e.target.value)}
           >
-            <option value="">Todo el grupo</option>
+            <option value="">Todo el equipo</option>
             {state.data?.workers.map((u) => (
               <option value={u.id} key={u.id}>
                 {u.name}
@@ -488,8 +487,12 @@ export function Reports() {
               <h2>Utilización de cupos</h2>
               {r.slots.map((g) => (
                 <p key={g.id}>
-                  <strong>{g.name}</strong> · {g.used} de {g.polaco_limit}{" "}
-                  perfiles de polacos
+                  {a.admin && (
+                    <>
+                      <strong>{g.name}</strong> ·{" "}
+                    </>
+                  )}
+                  {g.used} de {g.polaco_limit} perfiles de polacos
                 </p>
               ))}
             </section>
@@ -686,7 +689,9 @@ export function Team() {
         title={
           a.admin && !a.group
             ? "Usuarios de la plataforma"
-            : "Usuarios del grupo"
+            : a.admin
+              ? "Usuarios del grupo"
+              : "Usuarios del equipo"
         }
         description={
           state.data?.limit !== null && state.data?.limit !== undefined
@@ -711,7 +716,11 @@ export function Team() {
             setQ(v);
             setPage(1);
           }}
-          placeholder="Buscar nombre usuario o grupo"
+          placeholder={
+            a.admin
+              ? "Buscar nombre usuario o grupo"
+              : "Buscar nombre o usuario"
+          }
         />
         {a.admin && !location.pathname.startsWith("/groups/") && (
           <GroupFilter onChange={() => setPage(1)} />
@@ -1126,34 +1135,6 @@ export function SettingsPage() {
           </Button>
         </section>
         <section>
-          {a.user.role === "owner" && (
-            <>
-              <h2>Identidad de tu grupo</h2>
-              <Form
-                onSubmit={async (b) => {
-                  b.logo_id = b.logo_id || null;
-                  await api("/groups/" + a.user.group_id, {
-                    method: "PATCH",
-                    body: b,
-                  });
-                  await a.reload();
-                  a.refresh();
-                }}
-              >
-                <Field
-                  label="Nombre del grupo"
-                  name="name"
-                  required
-                  defaultValue={a.session.group.name}
-                />
-                <FileField
-                  label="Logo o imagen del grupo"
-                  name="logo_id"
-                  initial={a.session.group.logo_id}
-                />
-              </Form>
-            </>
-          )}
           <div className="settings-note">
             <h2>Acerca de Polacos</h2>
             <p>Moneda: colones costarricenses</p>

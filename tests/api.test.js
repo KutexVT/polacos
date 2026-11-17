@@ -567,7 +567,7 @@ test("08 · Chat privado, adjuntos autorizados, soporte iniciado por trabajador 
   await targetStream.cancel();
   await stream.cancel();
 });
-test("09 · Personalización independiente y archivos de logo autorizados por grupo", async () => {
+test("09 · Personalización independiente y nombres de grupo exclusivos del administrador", async () => {
   await ok(w1.cookie, "/me", { palette: "ocean", onboarded: true }, "PATCH");
   await ok(w1.cookie, "/me", { theme: "dark" }, "PATCH");
   const secondSession = await login(w1.username);
@@ -590,25 +590,83 @@ test("09 · Personalización independiente y archivos de logo autorizados por gr
     (await ok(w2.cookie, "/me")).user.preferences.palette,
     "ocean",
   );
+  const internalName = "Organización interna " + suffix;
+  for (const cookie of [owner, w1.cookie, w2.cookie]) {
+    assert.equal((await request(cookie, "/groups")).status, 403);
+    assert.equal(
+      (
+        await request(
+          cookie,
+          "/groups/" + group.id,
+          { name: "Cambio no permitido" },
+          "PATCH",
+        )
+      ).status,
+      403,
+    );
+    assert.equal((await ok(cookie, "/me")).group, undefined);
+    assert((await ok(cookie, "/directory")).every((u) => !("group_name" in u)));
+    assert(
+      (await ok(cookie, "/conversations")).items.every(
+        (c) => !("group_name" in c),
+      ),
+    );
+  }
+  assert((await ok(owner, "/users")).items.every((u) => !("group_name" in u)));
+  assert(
+    (await ok(owner, "/reports")).slots.every(
+      (g) => !("name" in g) && !("logo_id" in g),
+    ),
+  );
+  const renamed = await ok(
+    admin,
+    "/groups/" + group.id,
+    { name: internalName },
+    "PATCH",
+  );
+  assert.equal(renamed.name, internalName);
+  group.name = internalName;
+  assert.equal(
+    (await ok(admin, "/groups?q=" + encodeURIComponent(internalName))).items[0]
+      .name,
+    internalName,
+  );
+  assert(
+    (await ok(admin, "/directory?group_id=" + group.id)).every(
+      (u) => u.group_name === internalName,
+    ),
+  );
   const png = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aPAcAAAAASUVORK5CYII=",
     "base64",
   );
-  const f = await file(admin, png, "image/png", "logo.png");
-  await ok(admin, "/groups/" + group.id, { logo_id: f.id }, "PATCH");
-  assert.equal((await ok(w1.cookie, "/me")).group.logo_id, f.id);
+  const f = await file(admin, png, "image/png", "logo-antiguo.png");
   assert.equal(
-    (
-      await fetch(base + "/api/files/" + f.id, {
-        headers: { Cookie: w1.cookie },
-      })
-    ).status,
-    200,
-  );
-  assert.equal(
-    (await fetch(base + "/api/files/" + f.id, { headers: { Cookie: other } }))
+    (await request(admin, "/groups/" + group.id, { logo_id: f.id }, "PATCH"))
       .status,
-    403,
+    400,
+  );
+  // Simulate a logo uploaded before group branding was retired.
+  await pool.query("UPDATE groups SET logo_id=$2 WHERE id=$1", [
+    group.id,
+    f.id,
+  ]);
+  for (const cookie of [admin, owner, w1.cookie, other])
+    assert.equal(
+      (
+        await fetch(base + "/api/files/" + f.id, {
+          headers: { Cookie: cookie },
+        })
+      ).status,
+      404,
+    );
+  assert(
+    !(
+      "logo_id" in
+      (await ok(admin, "/groups?group_id=" + group.id)).items.find(
+        (g) => g.id === group.id,
+      )
+    ),
   );
 });
 test("09b · Administración: soporte, notas privadas, contexto y correcciones con identidad real", async () => {
